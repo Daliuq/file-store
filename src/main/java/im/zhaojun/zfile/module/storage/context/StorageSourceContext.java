@@ -18,6 +18,7 @@ import im.zhaojun.zfile.module.storage.model.param.IStorageParam;
 import im.zhaojun.zfile.module.storage.service.StorageSourceConfigService;
 import im.zhaojun.zfile.module.storage.service.StorageSourceService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
+import im.zhaojun.zfile.module.storage.service.base.DecompressorService;
 import im.zhaojun.zfile.module.storage.service.base.RefreshTokenService;
 import im.zhaojun.zfile.module.storage.support.StorageSourceSupport;
 import lombok.extern.slf4j.Slf4j;
@@ -311,6 +312,18 @@ public class StorageSourceContext implements ApplicationContextAware {
         log.info("清理存储源上下文对象, storageId: {}", storageId);
         DRIVES_SERVICE_MAP.remove(storageId);
     }
+    /**
+     * 通过类型存储源的 Service.
+     *
+     * @param   type
+     *          存储源类型
+     */
 
-
+    public AbstractBaseFileService<?>  geRandomByStorageType(String type) {
+        Integer storageId = storageSourceService.findRandomIDByType(type);
+        if (storageId == null) {
+            return null;
+        }
+        return getByStorageId(storageId);
+    }
 }

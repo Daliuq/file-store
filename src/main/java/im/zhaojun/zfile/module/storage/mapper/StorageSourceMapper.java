@@ -95,4 +95,5 @@ public interface StorageSourceMapper extends BaseMapper<StorageSource> {
      */
     String findKeyById(@Param("id")Integer id);
 
+    Integer selectRandomIdByType(@Param("type")String type);
 }

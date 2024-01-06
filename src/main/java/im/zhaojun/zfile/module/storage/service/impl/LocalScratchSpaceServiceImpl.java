@@ -172,7 +172,7 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
 
     @Override
     public StorageTypeEnum getStorageTypeEnum() {
-        return StorageTypeEnum.LOCAL;
+        return StorageTypeEnum.LOCALSCRATCH;
     }
 
 

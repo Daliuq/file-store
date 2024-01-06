@@ -482,4 +482,7 @@ public class StorageSourceService {
         return dbSaveResult.getId();
     }
 
+    public Integer findRandomIDByType(String type) {
+        return storageSourceMapper.selectRandomIdByType(type);
+    }
 }
