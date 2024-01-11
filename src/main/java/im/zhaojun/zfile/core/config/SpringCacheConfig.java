@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableCaching
 public class SpringCacheConfig {
 
+
 	@Value("${zfile.dbCache.enable:true}")
 	private Boolean dbCacheEnable;
 
@@ -29,5 +30,5 @@ public class SpringCacheConfig {
 	public CacheManager cacheManager() {
 		return BooleanUtil.isFalse(dbCacheEnable) ? new NoOpCacheManager() : new TransactionAwareCacheManagerProxy(new ConcurrentMapCacheManager());
 	}
-	
+
 }

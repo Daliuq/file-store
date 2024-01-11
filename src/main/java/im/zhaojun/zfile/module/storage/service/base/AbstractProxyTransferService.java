@@ -97,6 +97,7 @@ public abstract class AbstractProxyTransferService<P extends ProxyTransferParam>
 	 *          文件流
 	 *
 	 */
+
 	public abstract void uploadFile(String pathAndName, InputStream inputStream);
 
 

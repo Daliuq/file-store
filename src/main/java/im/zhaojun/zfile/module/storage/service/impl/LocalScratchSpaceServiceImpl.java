@@ -380,7 +380,7 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
             ZipArchiveInputStream decompressStream = ZipUtil.unzipStream(inputStream);
             ZipUtil.writeStreamToFile(decompressStream,depressDir);
 
-            System.out.println("Decompression completed.");
+
             return name; // 返回解压缩成功,返回解压的目录
         } catch (IOException e) {
             e.printStackTrace();

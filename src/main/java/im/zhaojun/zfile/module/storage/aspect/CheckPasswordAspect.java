@@ -1,6 +1,7 @@
 package im.zhaojun.zfile.module.storage.aspect;
 
 import cn.hutool.core.util.StrUtil;
+import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
 import im.zhaojun.zfile.module.password.model.dto.VerifyResultDTO;
 import im.zhaojun.zfile.module.password.service.PasswordConfigService;
 import im.zhaojun.zfile.module.storage.service.StorageSourceService;
@@ -15,6 +16,7 @@ import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.core.annotation.Order;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.stereotype.Component;
@@ -30,14 +32,15 @@ import java.lang.reflect.Method;
 @Aspect
 @Component
 @Slf4j
+@Order(StoreAspectOrderConstants.Check_Password_ASPECT_ORDER)
 public class CheckPasswordAspect {
-	
+
 	@Resource
 	private PasswordConfigService passwordConfigService;
-	
+
 	@Resource
 	private StorageSourceService storageSourceService;
-	
+
 	/**
 	 * 校验密码
 	 *
@@ -56,24 +59,24 @@ public class CheckPasswordAspect {
 		String storageKeyFieldExpression = checkPassword.storageKeyFieldExpression();
 		String passwordFieldExpression = checkPassword.passwordFieldExpression();
 		String pathFieldExpression = checkPassword.pathFieldExpression();
-		
+
 		Object[] args = point.getArgs();
-		
+
 		String storageKeyFieldValue = getFieldValue(args, storageKeyFieldExpression);
 		String passwordFieldValue = getFieldValue(args, passwordFieldExpression);
 		String pathFieldValue = getFieldValue(args, pathFieldExpression);
-		
+
 		if (!pathIsDirectory) {
 			pathFieldValue = StringUtils.getParentPath(pathFieldValue);
 		}
-		
+
 		Integer storageId = storageSourceService.findIdByKey(storageKeyFieldValue);
-		
+
 		if (storageId == null) {
 			String message = StrUtil.format("执行文件操作「{}」时检测到存储源不存在", storageKeyFieldValue);
 			throw new StorageSourceException(CodeMsg.STORAGE_SOURCE_NOT_FOUND, storageId, message);
 		}
-		
+
 		VerifyResultDTO verifyResultDTO = passwordConfigService.verifyPassword(storageId, pathFieldValue, passwordFieldValue);
 		if (verifyResultDTO.isPassed()) {
 			return point.proceed();
@@ -81,12 +84,12 @@ public class CheckPasswordAspect {
 			throw new PasswordVerifyException(verifyResultDTO.getCode(), verifyResultDTO.getMsg());
 		}
 	}
-	
-	
+
+
 	public String getFieldValue(Object target, String expression) {
 		SpelExpressionParser parser = new SpelExpressionParser();
 		Expression exp = parser.parseExpression(expression);
 		return (String) exp.getValue(target);
 	}
-	
+
 }

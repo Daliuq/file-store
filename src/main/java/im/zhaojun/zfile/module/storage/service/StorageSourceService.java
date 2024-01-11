@@ -349,7 +349,10 @@ public class StorageSourceService {
 
 
     /**
-     * 保存或修改存储源设置，如果没有 id 则新增，有则更新，且会检测是否填写 key，如果没写，则自动将 id 设置为 key 并保存。
+     * 保存或修改存储源设置
+     * ，如果没有 id 则新增，有则更新，
+     * 且会检测是否填写 key，如果没写，
+     * 则自动将 id 设置为 key 并保存。
      *
      * @param   storageSource
      *          存储源对象

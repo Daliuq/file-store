@@ -162,7 +162,9 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
         return true;
     }
 
-
+    //TODO 重命名目录，所有往下的文件都要修改
+    //法1 直接大量修改，数据库
+    //法2
     @Override
     public boolean renameFolder(String path, String name, String newName) {
         checkPathSecurity(path);

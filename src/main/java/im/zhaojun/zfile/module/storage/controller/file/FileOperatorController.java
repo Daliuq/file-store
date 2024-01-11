@@ -176,9 +176,9 @@ public class FileOperatorController {
 		return AjaxJson.getSuccessData(uploadUrl);
 	}
 
-	@ApiOperationSupport(order = 5)
+	@ApiOperationSupport(order = 6)
 	@ApiOperation(value = "解压zip")
-	@PostMapping("/zip")
+	@PostMapping("/decompress/zip")
 	@CheckPassword(storageKeyFieldExpression = "[0].storageKey",
 			pathFieldExpression = "[0].path",
 			passwordFieldExpression = "[0].password")
@@ -186,26 +186,31 @@ public class FileOperatorController {
 		//1通过能下载到本地的接口中的方法，从云端获取文件流
 		//1.1获取请求解压的文件服务对象
 		AbstractBaseFileService<?> fileService = storageSourceContext.getByStorageKey(decompressFileRequest.getStorageKey());
-		//1.2如果该文件服务没有提供解压能力
+		//1.2如果该文件服务没有提供解压能力(无法把下载数据转化为(输入)流)
 		if (!(fileService instanceof DownloadStreamableService)) {
-			//TODO return 错误
 			return AjaxJson.getError("该文件服务下文件无法在线解压");
 		}
 		//1.3获取文件流服务,Download able能获得下载流
 		DownloadStreamableService downloadStreamableService = (DownloadStreamableService) fileService;
-
 		InputStream inputStream = null;
 		try {
 			//1.4获取inputStream
-			String pathAndName= StringUtils.removeDuplicateSlashes(decompressFileRequest.getPath()+ ZFileConstant.PATH_SEPARATOR + decompressFileRequest.getName());
+			String pathAndName= StringUtils.removeDuplicateSlashes(
+					decompressFileRequest.getPath()+ ZFileConstant.PATH_SEPARATOR
+							+ decompressFileRequest.getName());
 			inputStream = downloadStreamableService.getDownloadStreamResource(pathAndName).getInputStream();
-			//2.1应该获取解压服务，然后再在解压服务下解压
-			DecompressorService decompressorService = (DecompressorService) storageSourceContext.geRandomByStorageType(StorageTypeEnum.LOCALSCRATCH.getKey());
-			//2.2,能解压的服务，调用解压操作，返回解压完的名称
-			String decompressFileName = decompressorService.decompress(decompressFileRequest.getPath(), inputStream);
-			return AjaxJson.getSuccessData(decompressFileName);
-
+			//2.1获取解压服务，然后再在解压服务下解压
+			DecompressorService decompressorService = (DecompressorService)
+					storageSourceContext.geRandomByStorageType(StorageTypeEnum.LOCALSCRATCH.getKey());
+			if(decompressorService == null){
+				//存储源中中找不到LOCALSCRATCH类的缓冲区
+				return AjaxJson.getError("解压服务缓冲区错误，请联系管理员");
+			}
+			//2.2,调用解压操作，返回解压完的名称
+			return AjaxJson.getSuccessData(
+					decompressorService.decompress(decompressFileRequest.getPath(), inputStream));
 		} catch (IOException e) {
+			//inputStream流获取错误
 			e.printStackTrace();
 			return AjaxJson.getError("该文件服务获取文件输入流错误或其他错误");
 		}finally {
