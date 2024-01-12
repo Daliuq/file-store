@@ -41,6 +41,13 @@ public class InodeInsertAspect {
     private static int PATH_AND_NAME_IN_PARAM = 0;
     private static int PATH_IN_PARAM = 0;
     private static int NAME_IN_PARAM = 1;
+
+    /**
+     * 切入文件更新，同步更新索引节点upload
+     * @param point
+     * @return
+     * @throws Throwable
+     */
     @Around(value =
             "( execution(* im.zhaojun.zfile.module.storage.service.impl.*.uploadFile(..)))")
     public Object aroundUploadFile(ProceedingJoinPoint point) throws Throwable {
@@ -81,14 +88,19 @@ public class InodeInsertAspect {
             inode.setStorageId(storageId);
             inode.setIsDirectory(false);
             //在上传文件时新增一条文件id
-            Long childId = inodeService.save(inode).getId();
+            Long childId = inodeService.insert(inode).getId();
 
-            inodeLinkService.save(new InodeLink(parentId,childId));
+            inodeLinkService.insert(new InodeLink(parentId,childId));
 
         return result;
     }
 
-
+    /**
+     * 切入存储源，创建
+     * @param point
+     * @return
+     * @throws Throwable
+     */
     @Around(value = "( execution(* im.zhaojun.zfile.module.storage.service.*.saveStorageSource(..)))")
     public Object aroundSaveStorageSource(ProceedingJoinPoint point) throws Throwable{
         QueryWrapper<Inode> queryWrapper=new QueryWrapper<>();
@@ -103,7 +115,7 @@ public class InodeInsertAspect {
             inode.setIsHistoricalVersionService(false);
             inode.setStorageId(storageId);
             inode.setName(ZFileConstant.PATH_SEPARATOR);
-            inodeService.save(inode);
+            inodeService.insert(inode);
         }
         return storageId;
     }
@@ -139,9 +151,9 @@ public class InodeInsertAspect {
         inode.setStorageId(storageId);
         inode.setIsDirectory(true);
         //在上传文件时新增一条文件id
-        Long childId = inodeService.save(inode).getId();
+        Long childId = inodeService.insert(inode).getId();
 
-        inodeLinkService.save(new InodeLink(parentId,childId));
+        inodeLinkService.insert(new InodeLink(parentId,childId));
 
         return result;
     }

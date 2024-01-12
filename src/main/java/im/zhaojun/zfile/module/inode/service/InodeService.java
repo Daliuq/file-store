@@ -1,28 +1,30 @@
 package im.zhaojun.zfile.module.inode.service;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.MapUtile;
+import im.zhaojun.zfile.core.util.StringUtils;
+import im.zhaojun.zfile.module.filter.service.FilterConfigService;
 import im.zhaojun.zfile.module.inode.mapper.InodeLinkMapper;
 import im.zhaojun.zfile.module.inode.mapper.InodeMapper;
 import im.zhaojun.zfile.module.inode.model.entity.Inode;
 import im.zhaojun.zfile.module.inode.model.entity.InodeLink;
-import io.swagger.models.auth.In;
+
+import im.zhaojun.zfile.module.inode.model.result.InodeItemResult;
+import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
+import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
+import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
+
 
 import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 @Service
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -31,13 +33,32 @@ public class InodeService {
     @Resource
     InodeMapper inodeMapper;
 
+    @Resource
+    InodeLinkMapper inodeLinkMapper;
+
+    @Resource
+    FilterConfigService filterConfigService;
+
+    @Resource
+    private StorageSourceContext storageSourceContext;
+
     //TODO 查
 
-    public Inode save(Inode inode){
+    /**
+     * 新建
+     * @param inode
+     * @return
+     */
+    public Inode insert(Inode inode){
         inodeMapper.insert(inode);
         return inode;
     }
 
+    /**
+     * 更新
+     * @param inode
+     * @return
+     */
     @CacheEvict(value = "file-track", key = "#inode.id")
     public Inode update(Inode inode){
         UpdateWrapper<Inode> wrapper= new UpdateWrapper<>();
@@ -46,6 +67,11 @@ public class InodeService {
         return inode;
     }
 
+    /**
+     * 逻辑删除索引节点
+     * @param inode
+     * @return
+     */
     @CacheEvict(value = "file-track", key = "#inode.id")
     public Inode deleteInLogically(Inode inode){
         UpdateWrapper<Inode> wrapper= new UpdateWrapper<>();
@@ -55,6 +81,11 @@ public class InodeService {
         return inode;
     }
 
+    /**
+     * 删除索引节点
+     * @param inode
+     * @return
+     */
     @CacheEvict(value = "file-track", key = "#inode.id")
     public Inode deleteIndeed(Inode inode){
         QueryWrapper<Inode> wrapper= new QueryWrapper<>();
@@ -64,11 +95,14 @@ public class InodeService {
     }
 
 
-    @Resource
-    InodeLinkMapper inodeLinkMapper;
-
-    @Cacheable(value = "find-path-by-id",key = "#storeId+'-'+#path")
-    public Long findInodeIdByPath(String path,int storeId){
+    /**
+     * 跟路径找到索引节点id
+     * @param path
+     * @param storeId
+     * @return
+     */
+    @Cacheable(value = "find-id-by-path",key = "#storeId+'-'+#path")
+    public Long findInodeIdByPath(String path,Integer storeId){
 
         QueryWrapper<Inode> inodeQueryWrapper=new QueryWrapper<>();
         inodeQueryWrapper.eq(Inode.STORAGE_ID_COLUMN_NAME,storeId).
@@ -99,12 +133,48 @@ public class InodeService {
                     if(inode.getName().equals(part)){
                         rootId = childId;
                         break;
-                    };
+                    }
             }
         }
         return rootId;
     }
 
+    /**
+     * 根据id找到索引节点的path
+     * @param id
+     * @return
+     */
+    public String findInodePathById(Long id){
+        QueryWrapper<InodeLink> inodeLinkQueryWrapper = new QueryWrapper<>();
+        Long now=id;
+        StringBuilder path=new StringBuilder();
+        while(true){
+            //1根据id去inode_link找p_id,
+            // 于此同时SB=去重分隔符(inode_name(id)+分隔符+SB)
+            //2 重复上述过程
+            inodeLinkQueryWrapper.clear();
+
+            //查找自己的信息
+            Inode inode = inodeMapper.selectById(now);
+            //头部插入'/'和路径名称
+            path.insert(0,ZFileConstant.PATH_SEPARATOR);
+            path.insert(0,inode.getName());
+
+            //查找父节点
+            inodeLinkQueryWrapper.eq(InodeLink.CHILD_ID_COLUMN_NAME,now);
+            InodeLink inodeLink = inodeLinkMapper.selectOne(inodeLinkQueryWrapper);
+            if(inodeLink==null){
+                return StringUtils.removeDuplicateSlashes(
+                        path.insert(0,ZFileConstant.PATH_SEPARATOR).toString());
+            }
+            now=inodeLink.getParentId();
+        }
+    }
+
+    /**
+     * 逻辑删除所有索引节点
+     * @param inode
+     */
     public void deleteWithChildInLogically(Inode inode) {
         //获取当前节点
         QueryWrapper<InodeLink> inodeLinkQueryWrapper = new QueryWrapper<>();
@@ -117,7 +187,6 @@ public class InodeService {
             inode1.setId(nowId);
             deleteInLogically(inode1);
 
-
             //子节点加入队列
             inodeLinkQueryWrapper.clear();
             inodeLinkQueryWrapper.eq(InodeLink.PARENT_ID_COLUMN_NAME,nowId);
@@ -129,11 +198,59 @@ public class InodeService {
         }
     }
 
+    /**
+     * 逻辑删除一个存储源的所有索引节点(逻辑上)
+     * @param storageId
+     */
     public void deleteAllInodeInAStorageInLogically(Integer storageId) {
         UpdateWrapper<Inode> updateWrapper=new UpdateWrapper<>();
         updateWrapper.eq(Inode.STORAGE_ID_COLUMN_NAME,storageId);
         Inode inode=new Inode();
         inode.setIsDelete(true);
         inodeMapper.update(inode,updateWrapper);
+    }
+
+    /**
+     * 根据name右like搜索索引详情，用于前端搜索
+     * @param name
+     * 搜索的名称
+     * @return
+     *
+     */
+    public List<InodeItemResult> findListByName(String name){
+        //这个过程非常长
+        //1获取全部的name右like的存储源id
+        QueryWrapper<Inode> inodeQueryWrapper=new QueryWrapper<>();
+        inodeQueryWrapper.likeRight(Inode.NAME_COLUMN_NAME,name);
+
+        List<Inode> inodes = inodeMapper.selectList(inodeQueryWrapper);
+        List<InodeItemResult> inodeItemResults=new ArrayList<>();
+        for(Inode inode:inodes){
+            //2获取这些id的全部路径
+            String inodePathById = findInodePathById(inode.getId());
+
+            //3校验这些路径的过滤器
+            if(filterConfigService.checkFileIsInaccessible(inode.getStorageId(),inodePathById)
+            ||filterConfigService.checkFileIsHidden(inode.getStorageId(),inodePathById)){
+                continue;
+            }
+            //4封装成InodeItemResult
+            InodeItemResult inodeItemResult = new InodeItemResult();
+                //取出对应文件服务(是单例)
+            AbstractBaseFileService<?> fileService = storageSourceContext.getByStorageId(
+                    inode.getStorageId());
+            FileItemResult fileItem = fileService.getFileItem(inodePathById);
+
+            inodeItemResult.setName(fileItem.getName());
+            inodeItemResult.setPath(fileItem.getPath());
+            inodeItemResult.setSize(fileItem.getSize());
+            inodeItemResult.setTime(fileItem.getTime());
+            inodeItemResult.setType(fileItem.getType());
+            inodeItemResult.setStorageId(inode.getStorageId());
+
+            inodeItemResults.add(inodeItemResult);
+
+        }
+        return inodeItemResults;
     }
 }

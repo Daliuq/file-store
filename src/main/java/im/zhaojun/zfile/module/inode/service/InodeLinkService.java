@@ -17,8 +17,14 @@ public class InodeLinkService {
     @Resource
     InodeLinkMapper inodeLinkMapper;
 
-    public InodeLink save(InodeLink inodeLink){
+    /**
+     * 新建
+     * @param inodeLink
+     * @return
+     */
+    public InodeLink insert(InodeLink inodeLink){
         inodeLinkMapper.insert(inodeLink);
         return inodeLink;
     }
+
 }

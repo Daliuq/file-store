@@ -32,7 +32,12 @@ public class InodeDeleteAspect {
 
     private static int STORAGE_ID_IN_PARAM = 0;
 
-
+    /**
+     * 切入删除操作，同步删除(逻辑)索引节点
+     * @param point
+     * @return
+     * @throws Throwable
+     */
     @Around("( execution(* im.zhaojun.zfile.module.storage.service.impl.*.deleteFile(..)))")
     public Object aroundDeleteFile(ProceedingJoinPoint point) throws Throwable {
         Object[] args = point.getArgs();

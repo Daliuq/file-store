@@ -13,11 +13,9 @@ public class MapUtile {
         for (V v : list) {
             @SuppressWarnings("unchecked")
             T id = (T) v.getId();
-            @SuppressWarnings("unchecked")
-            V value = v;
 
             if (id != null) {
-                resultMap.put(id, value);
+                resultMap.put(id, v);
             }
         }
         return resultMap;
