@@ -27,6 +27,9 @@ public class HistoryItemResult {
     @ApiModelProperty(value = "下载地址", example = "http://www.example.com/a.mp4")
     private String url;
 
+    @ApiModelProperty(value = "类型，用于前端，永远为FILE", example = "/home/")
+    private FileTypeEnum type;
+
     /**
      * 获取路径和名称的组合, 并移除重复的路径分隔符 /.
      *

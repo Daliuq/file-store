@@ -15,6 +15,7 @@ import im.zhaojun.zfile.module.inode.service.InodeService;
 import im.zhaojun.zfile.module.storage.annotation.CheckPassword;
 import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.model.entity.StorageSource;
+import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
 import im.zhaojun.zfile.module.storage.service.StorageSourceService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
@@ -150,6 +151,8 @@ public class historyController {
                     +ZFileConstant.PATH_SEPARATOR+
                     item.getInodeId()+ ZFileConstant.PATH_SEPARATOR
                     + DateUtils.historyServiceFormatDate(item.getBakeUpTime());
+            String relativePath=item.getInodeId()+ ZFileConstant.PATH_SEPARATOR
+                    + DateUtils.historyServiceFormatDate(item.getBakeUpTime());
             HistoryItemResult historyItemResult = new HistoryItemResult();
             historyItemResult.setName(item.getName());
             historyItemResult.setPath(
@@ -159,8 +162,13 @@ public class historyController {
             historyItemResult.setName(item.getName());
             historyItemResult.setUrl(
                     storageSourceContext.getByStorageId(
-                            item.getBakeUpStorageId()).getDownloadUrl(path));
-
+                            item.getBakeUpStorageId()).getDownloadUrl(
+                                    relativePath
+                            +ZFileConstant.FILE_EXTENSION_SEPARATOR
+                                            + StringUtils.getFileExtension(
+                                            item.getName()
+                                    )));
+            historyItemResult.setType(FileTypeEnum.FILE);
             historyItemResults.add(historyItemResult);
         }
 
