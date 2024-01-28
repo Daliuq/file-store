@@ -14,6 +14,8 @@ import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
 import im.zhaojun.zfile.module.storage.model.enums.StorageTypeEnum;
 import im.zhaojun.zfile.module.storage.model.request.operator.*;
+import im.zhaojun.zfile.module.storage.model.result.DecompressResult;
+import im.zhaojun.zfile.module.storage.service.StorageSourceService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import im.zhaojun.zfile.module.storage.service.base.DecompressorService;
 import im.zhaojun.zfile.module.storage.service.base.DownloadStreamableService;
@@ -50,6 +52,9 @@ public class FileOperatorController {
 
 	@Resource
 	private PasswordConfigService passwordConfigService;
+
+	@Resource
+	private StorageSourceService storageSourceService;
 
 	@ApiOperationSupport(order = 1)
 	@ApiOperation(value = "创建文件夹")
@@ -170,8 +175,10 @@ public class FileOperatorController {
 			pathFieldExpression = "[0].path",
 			passwordFieldExpression = "[0].password")
 	public AjaxJson<?> getUploadFileUrl(@Valid @RequestBody UploadFileRequest uploadFileRequest) {
-		AbstractBaseFileService<?> fileService = storageSourceContext.getByStorageKey(uploadFileRequest.getStorageKey());
-		String uploadUrl = fileService.getUploadUrl(uploadFileRequest.getPath(),
+		AbstractBaseFileService<?> fileService =
+				storageSourceContext.getByStorageKey(uploadFileRequest.getStorageKey());
+		String uploadUrl =
+				fileService.getUploadUrl(uploadFileRequest.getPath(),
 				uploadFileRequest.getName(), uploadFileRequest.getSize());
 		return AjaxJson.getSuccessData(uploadUrl);
 	}
@@ -185,7 +192,8 @@ public class FileOperatorController {
 	public AjaxJson<?> zip(@Valid @RequestBody DecompressFileRequest decompressFileRequest) {
 		//1通过能下载到本地的接口中的方法，从云端获取文件流
 		//1.1获取请求解压的文件服务对象
-		AbstractBaseFileService<?> fileService = storageSourceContext.getByStorageKey(decompressFileRequest.getStorageKey());
+		AbstractBaseFileService<?> fileService = storageSourceContext.
+				getByStorageKey(decompressFileRequest.getStorageKey());
 		//1.2如果该文件服务没有提供解压能力(无法把下载数据转化为(输入)流)
 		if (!(fileService instanceof DownloadStreamableService)) {
 			return AjaxJson.getError("该文件服务下文件无法在线解压");
@@ -198,17 +206,28 @@ public class FileOperatorController {
 			String pathAndName= StringUtils.removeDuplicateSlashes(
 					decompressFileRequest.getPath()+ ZFileConstant.PATH_SEPARATOR
 							+ decompressFileRequest.getName());
-			inputStream = downloadStreamableService.getDownloadStreamResource(pathAndName).getInputStream();
+			inputStream = downloadStreamableService.getDownloadStream(pathAndName);
 			//2.1获取解压服务，然后再在解压服务下解压
-			DecompressorService decompressorService = (DecompressorService)
-					storageSourceContext.geRandomByStorageType(StorageTypeEnum.LOCALSCRATCH.getKey());
+			AbstractBaseFileService<?> abstractBaseFileService =
+					storageSourceContext.getRandomByStorageType(StorageTypeEnum.LOCALSCRATCH.getKey());
+			DecompressorService decompressorService = (DecompressorService) abstractBaseFileService;
 			if(decompressorService == null){
 				//存储源中中找不到LOCALSCRATCH类的缓冲区
 				return AjaxJson.getError("解压服务缓冲区错误，请联系管理员");
 			}
-			//2.2,调用解压操作，返回解压完的名称
+            //2.2,调用解压操作，返回解压完的名称和存放的存储源id
+            DecompressResult decompressResult = new DecompressResult();
+            decompressResult.setPath(
+					decompressorService.decompress(
+							decompressFileRequest.getPath(), inputStream));
+
+            decompressResult.setStorageKey(
+					storageSourceService.findStorageKeyById(
+							abstractBaseFileService.getStorageId()));
+
 			return AjaxJson.getSuccessData(
-					decompressorService.decompress(decompressFileRequest.getPath(), inputStream));
+                    decompressResult
+			);
 		} catch (IOException e) {
 			//inputStream流获取错误
 			e.printStackTrace();

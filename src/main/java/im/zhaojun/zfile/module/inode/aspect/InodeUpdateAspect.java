@@ -19,7 +19,7 @@ import javax.annotation.Resource;
 @Component
 @Slf4j
 //切面执行顺序排序
-@Order(StoreAspectOrderConstants.File_TRACK_ASPECT_ORDER)
+@Order(StoreAspectOrderConstants.INODE_TRACK_ASPECT_ORDER)
 public class InodeUpdateAspect {
 
     @Resource
@@ -34,12 +34,12 @@ public class InodeUpdateAspect {
      * @return
      * @throws Throwable
      */
+    //这两个都是基本文件服务能实现的，前端不用同步更新
     @Around("( execution(* im.zhaojun.zfile.module.storage.service.impl.*.renameFile(..)))" +
             "||( execution(* im.zhaojun.zfile.module.storage.service.impl.*.renameFolder(..)))")
-    public Object aroundRenameFile(ProceedingJoinPoint point) throws Throwable {
+    public Object aroundRenameFileAndFolder(ProceedingJoinPoint point) throws Throwable {
         Object[] args = point.getArgs();
         Object result = null;
-
         //获取3个参数
         String path = (String) args[InodeUpdateAspect.PATH_IN_PARAM];
         String name = (String) args[InodeUpdateAspect.NAME_IN_PARAM];
@@ -49,7 +49,6 @@ public class InodeUpdateAspect {
         AbstractProxyTransferService<?> abstractProxyTransferService =
                 (AbstractProxyTransferService<?>) targetObject;
         Integer storageId = abstractProxyTransferService.getStorageId();
-
         //运行方法
         result = point.proceed();
         //更新节点

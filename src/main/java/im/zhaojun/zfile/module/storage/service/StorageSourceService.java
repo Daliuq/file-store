@@ -3,6 +3,7 @@ package im.zhaojun.zfile.module.storage.service;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import im.zhaojun.zfile.core.exception.StorageSourceException;
 import im.zhaojun.zfile.core.exception.file.InvalidStorageSourceException;
 import im.zhaojun.zfile.core.util.CodeMsg;
@@ -17,6 +18,7 @@ import im.zhaojun.zfile.module.readme.model.entity.ReadmeConfig;
 import im.zhaojun.zfile.module.readme.service.ReadmeConfigService;
 import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.convert.StorageSourceConvert;
+import im.zhaojun.zfile.module.storage.mapper.StorageSourceConfigMapper;
 import im.zhaojun.zfile.module.storage.mapper.StorageSourceMapper;
 import im.zhaojun.zfile.module.storage.model.dto.StorageSourceAllParamDTO;
 import im.zhaojun.zfile.module.storage.model.dto.StorageSourceDTO;
@@ -41,6 +43,8 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Random;
+import java.util.function.LongFunction;
 
 /**
  * 存储源基本信息 Service
@@ -81,6 +85,9 @@ public class StorageSourceService {
 
     @Resource
     private DownloadLogService downloadLogService;
+
+    @Resource
+    private StorageSourceConfigMapper storageSourceConfigMapper;
 
 
     /**
@@ -171,6 +178,20 @@ public class StorageSourceService {
         return Optional.ofNullable(storageSourceService.findByStorageKey(storageKey)).map(StorageSource::getId).orElse(null);
     }
 
+    /**
+     * 根据存储源 id 获取存储源 key
+     *
+     * @param   storageId
+     *          存储源 id
+     *
+     * @return  存储源信息
+     */
+    public String findKeyById(Integer storageId) {
+        // 通过key找id，返回根据存储关键字找存储源（对象）的id或者null
+        return Optional.ofNullable(
+                storageSourceService.findById(storageId)
+        ).map(StorageSource::getKey).orElse(null);
+    }
 
     /**
      * 根据存储源 id 获取存储源 key
@@ -332,9 +353,11 @@ public class StorageSourceService {
 
         // 保存存储源参数
         List<StorageSourceConfig> storageSourceConfigList =
-                storageSourceConfigService.toStorageSourceConfigList(storageId,
-                                                                    dbSaveResult.getType(),
-                                                                    saveStorageSourceRequest.getStorageSourceAllParam());
+                storageSourceConfigService
+                        .toStorageSourceConfigList(storageId,
+                                dbSaveResult.getType(),
+                                saveStorageSourceRequest.getStorageSourceAllParam());
+
         storageSourceConfigService.saveBatch(storageId, storageSourceConfigList);
         log.info("保存存储源参数成功，尝试根据参数初始化存储源, id: {}, name: {}, config size: {}",
                 dbSaveResult.getId(), dbSaveResult.getName(), storageSourceConfigList.size());
@@ -487,5 +510,18 @@ public class StorageSourceService {
 
     public Integer findRandomIDByType(String type) {
         return storageSourceMapper.selectRandomIdByType(type);
+    }
+
+    public Integer findRandomIDByConfig(String name,String value) {
+
+        Random random=new Random();
+        QueryWrapper<StorageSourceConfig> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(StorageSourceConfig.NAME_COLUMN_NAME,name)
+                .eq(StorageSourceConfig.VALUE_COLUMN_NAME,value);
+        int count = Math.toIntExact(storageSourceConfigMapper.selectCount(queryWrapper));
+        long offset=random.nextInt((int) count);
+        //不用clear
+        queryWrapper.last("limit 1 offset "+offset);
+        return storageSourceConfigMapper.selectOne(queryWrapper).getStorageId();
     }
 }

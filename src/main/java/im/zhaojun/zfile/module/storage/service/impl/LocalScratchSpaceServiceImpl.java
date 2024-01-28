@@ -110,7 +110,7 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
 
 
     @Override
-    public boolean newFolder(String path, String name) {
+    public boolean uncheckNewFolder(String path, String name) {
         checkPathSecurity(path);
         checkNameSecurity(name);
 
@@ -177,7 +177,7 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
 
 
     @Override
-    public void uploadFile(String pathAndName, InputStream inputStream) {
+    public void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
         checkPathSecurity(pathAndName);
 
         String baseFilePath = param.getFilePath();
@@ -197,7 +197,7 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
 
     @Override//获取文件下载流
     @Nullable
-    public FileSystemResource getDownloadStreamResource(String pathAndName) {
+    public InputStream getDownloadStream(String pathAndName) throws IOException {
         checkPathSecurity(pathAndName);
 
         File file = new File(StringUtils.removeDuplicateSlashes(param.getFilePath() + ZFileConstant.PATH_SEPARATOR + pathAndName));
@@ -205,7 +205,7 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
             return null;
         }
 
-        return new FileSystemResource(file);
+        return new FileSystemResource(file).getInputStream();
     }
 
     @Override
@@ -303,11 +303,11 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
     @Transactional
     public Boolean downloadFromThisToLocalServer(String downloadFilePathAndName, String unloadFilePathAndName, LocalService localService) throws Exception {
         //1，调用this里的方法，获取输入流资源InputStreamResource
-        FileSystemResource inputStreamResource = this.getDownloadStreamResource(downloadFilePathAndName);
+        InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
         //2. 调用localService的写入方法，写入//3. 返回成功失败
-        if (inputStreamResource != null) {
+        if (downloadStreamResource != null) {
             //InputStream在uploadFileStreamToLocal中关闭
-            localService.uploadFileStreamToLocal(unloadFilePathAndName,inputStreamResource.getInputStream());
+            localService.uploadFileStreamToLocal(unloadFilePathAndName,downloadStreamResource);
             return true;
         }else{
             return false;
@@ -318,11 +318,11 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
     @Override
     public Boolean uploadFromLocalServerToThis(String uploadFilePathAndName, String localFilePathAndName, LocalService localService) throws Exception {
         //1，调用localService中方法，get输入流
-        FileSystemResource localFileResource = localService.getLocalFileResource(localFilePathAndName);
+        InputStream localFileResource = localService.getLocalFileResource(localFilePathAndName);
         //2. 调用localService的写入方法，写入//3. 返回成功失败
         //InputStream在uploadStream中关闭
         if (localFileResource != null) {
-            this.uploadFile(uploadFilePathAndName,localFileResource.getInputStream());
+            this.uploadFile(uploadFilePathAndName,localFileResource);
             return true;
         }else{
             return false;
@@ -332,11 +332,11 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
     @Override
     public Boolean moveFromThisToOtherServer(String downloadFilePathAndName, String unloadFilePathAndName, MoverService otherService) throws Exception {
         //1，调用this里的方法，获取输入流资源InputStreamResource
-        FileSystemResource inputStreamResource = this.getDownloadStreamResource(downloadFilePathAndName);
+        InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
         //2. 调用localService的写入方法，写入//3. 返回成功失败
-        if (inputStreamResource != null) {
+        if (downloadStreamResource != null) {
             //InputStream在uploadStream中关闭
-            otherService.uploadStream(unloadFilePathAndName,inputStreamResource.getInputStream());
+            otherService.uploadStream(unloadFilePathAndName,downloadStreamResource);
             return true;
         }else{
             return false;
@@ -349,8 +349,8 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
     }
 
     @Override
-    public FileSystemResource getLocalFileResource(String localFilePathAndName) {
-        return this.getDownloadStreamResource(localFilePathAndName);
+    public InputStream getLocalFileResource(String localFilePathAndName) throws IOException {
+        return this.getDownloadStream(localFilePathAndName);
     }
 
     @Override
@@ -367,7 +367,7 @@ public class LocalScratchSpaceServiceImpl extends AbstractProxyTransferService<L
             String name=StringUtils.generateRandomString(30);
             //param.getFilePath();绝对路径       ||    path在param.getFilePath()中的相对路径
             String depressDir = StringUtils.removeDuplicateSlashes(param.getFilePath() + ZFileConstant.PATH_SEPARATOR
-                    + path + ZFileConstant.PATH_SEPARATOR + name);
+                    +  name);
             File destinationDirectory = new File(depressDir);
             if (!destinationDirectory.exists()) {
                 boolean created = destinationDirectory.mkdirs(); // 尝试创建目录

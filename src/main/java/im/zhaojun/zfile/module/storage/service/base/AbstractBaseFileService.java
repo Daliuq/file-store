@@ -92,4 +92,9 @@ public abstract class AbstractBaseFileService<P extends IStorageParam> implement
         return false;
     }
 
+    @Override
+    public boolean newFolder(String path, String name){
+        return uncheckNewFolder(path,name);
+    };
+
 }

@@ -15,6 +15,8 @@ import im.zhaojun.zfile.module.storage.model.enums.StorageTypeEnum;
 import im.zhaojun.zfile.module.storage.model.param.FtpParam;
 import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
+import im.zhaojun.zfile.module.storage.service.base.LocalService;
+import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTP;
@@ -28,10 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -99,7 +98,7 @@ public class FtpServiceImpl extends AbstractProxyTransferService<FtpParam> {
         } catch (IOException e) {
             throw ExceptionUtil.wrapRuntime(e);
         }
-    
+
         if (ArrayUtil.isEmpty(ftpFiles)) {
             throw ExceptionUtil.wrapRuntime(new FileNotFoundException());
         }
@@ -112,7 +111,7 @@ public class FtpServiceImpl extends AbstractProxyTransferService<FtpParam> {
 
 
     @Override
-    public synchronized boolean newFolder(String path, String name) {
+    public synchronized boolean uncheckNewFolder(String path, String name) {
         String fullPath = StringUtils.concat(param.getBasePath(), path, name);
         return ftp.mkdir(fullPath);
     }
@@ -137,7 +136,7 @@ public class FtpServiceImpl extends AbstractProxyTransferService<FtpParam> {
         ftp.reconnectIfTimeout();
         String srcPath = StringUtils.concat(param.getBasePath(), path, name);
         String distPath = StringUtils.concat(param.getBasePath(), path, newName);
-        
+
         try {
             return ftp.getClient().rename(srcPath, distPath);
         } catch (IOException e) {
@@ -164,19 +163,19 @@ public class FtpServiceImpl extends AbstractProxyTransferService<FtpParam> {
         pathAndName = StringUtils.concat(param.getBasePath(), pathAndName);
         String fileName = FileUtil.getName(pathAndName);
         String folderName = FileUtil.getParent(pathAndName, 1);
-        
+
         OutputStream outputStream = response.getOutputStream();
 
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM.getType());
         response.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + StringUtils.encodeAllIgnoreSlashes(fileName));
-    
+
         ftp.download(folderName, fileName, outputStream);
         return null;
     }
 
 
     @Override
-    public synchronized void uploadFile(String pathAndName, InputStream inputStream) {
+    public synchronized void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
         String fullPath = StringUtils.concat(param.getBasePath(), pathAndName);
         String fileName = FileUtil.getName(pathAndName);
         String folderName = FileUtil.getParent(fullPath, 1);
@@ -198,4 +197,73 @@ public class FtpServiceImpl extends AbstractProxyTransferService<FtpParam> {
         return fileItemResult;
     }
 
+    @Override
+    public InputStream getDownloadStream(String pathAndName) throws IOException {
+        //TODO 未测试
+        // 如果配置了域名，还访问代理下载 URL, 则抛出异常进行提示.
+        if (StrUtil.isNotEmpty(param.getDomain())) {
+            throw new DisableProxyDownloadException(CodeMsg.STORAGE_SOURCE_FILE_DISABLE_PROXY_DOWNLOAD, storageId);
+        }
+
+        ftp.reconnectIfTimeout();
+        pathAndName = StringUtils.concat(param.getBasePath(), pathAndName);
+        String fileName = FileUtil.getName(pathAndName);
+        String folderName = FileUtil.getParent(pathAndName, 1);
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ftp.download(folderName, fileName, byteArrayOutputStream);
+
+        // 通过 ByteArrayInputStream 将 ByteArrayOutputStream 中的数据转换为 InputStream
+        return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+    }
+
+    @Override
+    public Boolean downloadFromThisToLocalServer(String downloadFilePathAndName, String unloadFilePathAndName, LocalService localService) throws Exception {
+        //1，调用this里的方法，获取输入流资源InputStreamResource
+        InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+        //2. 调用localService的写入方法，写入//3. 返回成功失败
+        if (downloadStreamResource != null) {
+            //InputStream在uploadFileStreamToLocal中关闭
+            localService.uploadFileStreamToLocal(unloadFilePathAndName,downloadStreamResource);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    @Override
+    public Boolean uploadFromLocalServerToThis(String uploadFilePathAndName, String localFilePathAndName, LocalService localService) throws Exception {
+        //1，调用localService中方法，get输入流
+        InputStream localFileResource = localService.getLocalFileResource(localFilePathAndName);
+        //2. 调用localService的写入方法，写入//3. 返回成功失败
+        //InputStream在uploadStream中关闭
+        if (localFileResource != null) {
+            this.uploadFile(uploadFilePathAndName,localFileResource);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    @Override
+    public Boolean moveFromThisToOtherServer(
+            String downloadFilePathAndName,
+            String unloadFilePathAndName,
+            MoverService otherService) throws Exception {
+        //1，调用this里的方法，获取输入流资源InputStreamResource
+        InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+        //2. 调用localService的写入方法，写入//3. 返回成功失败
+        if (downloadStreamResource != null) {
+            //InputStream在uploadStream中关闭
+            otherService.uploadStream(unloadFilePathAndName,downloadStreamResource);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    @Override
+    public void uploadStream(String unloadFilePathAndName, InputStream inputStream) {
+        this.uploadFile(unloadFilePathAndName,inputStream);
+    }
 }

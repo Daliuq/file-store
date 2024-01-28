@@ -18,7 +18,6 @@ import im.zhaojun.zfile.module.storage.model.param.IStorageParam;
 import im.zhaojun.zfile.module.storage.service.StorageSourceConfigService;
 import im.zhaojun.zfile.module.storage.service.StorageSourceService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
-import im.zhaojun.zfile.module.storage.service.base.DecompressorService;
 import im.zhaojun.zfile.module.storage.service.base.RefreshTokenService;
 import im.zhaojun.zfile.module.storage.support.StorageSourceSupport;
 import lombok.extern.slf4j.Slf4j;
@@ -239,7 +238,6 @@ public class StorageSourceContext implements ApplicationContextAware {
                 } else {
                     key = storageParamItem.key();
                 }
-
                 if (storageParamItem.ignoreInput()) {
                     ignoreFieldNameList.add(key);
                 }
@@ -319,11 +317,27 @@ public class StorageSourceContext implements ApplicationContextAware {
      *          存储源类型
      */
 
-    public AbstractBaseFileService<?>  geRandomByStorageType(String type) {
+    public AbstractBaseFileService<?> getRandomByStorageType(String type) {
         Integer storageId = storageSourceService.findRandomIDByType(type);
         if (storageId == null) {
             return null;
         }
+        return getByStorageId(storageId);
+    }
+    /**
+     * 通过类型存储源的 Service.
+     *
+     * @param   name
+     *          存储源配置字段民
+     * @param   value
+     *          对应值
+     */
+    public AbstractBaseFileService<?> getRandomByStorageConfig(String name,String value) {
+        Integer storageId = storageSourceService.findRandomIDByConfig(name,value);
+        if (storageId == null) {
+            return null;
+        }
+        System.out.println("111:"+getByStorageId(storageId).getStorageId());
         return getByStorageId(storageId);
     }
 }

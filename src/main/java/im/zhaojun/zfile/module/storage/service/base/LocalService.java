@@ -1,8 +1,6 @@
 package im.zhaojun.zfile.module.storage.service.base;
 
-import org.apache.catalina.webresources.FileResource;
-import org.springframework.core.io.FileSystemResource;
-
+import java.io.IOException;
 import java.io.InputStream;
 
 /***
@@ -19,5 +17,5 @@ public interface LocalService {
      */
     void uploadFileStreamToLocal(String unloadFilePathAndName, InputStream inputStream);
 
-    FileSystemResource getLocalFileResource(String localFilePathAndName);
+    InputStream getLocalFileResource(String localFilePathAndName) throws IOException;
 }

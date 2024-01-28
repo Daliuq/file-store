@@ -9,14 +9,14 @@ import lombok.Getter;
  * @author zhaojun
  */
 @Getter
-public class MicrosoftDriveParam implements IStorageParam {
+public class MicrosoftDriveParam extends BaseParam{
 
 	@StorageParamItem(name = "clientId", defaultValue = "${zfile.onedrive.clientId}", order = 1)
 	private String clientId;
 
 	@StorageParamItem(name = "SecretKey", defaultValue = "${zfile.onedrive.clientSecret}", order = 2)
 	private String clientSecret;
-	
+
 	@StorageParamItem(name = "回调地址", description = "如使用自定义 api, 需将此处默认的域名修改为您的域名, 且需在 api 中配置为回调域名.", defaultValue = "${zfile.onedrive.redirectUri}", order = 3)
 	private String redirectUri;
 

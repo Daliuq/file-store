@@ -155,7 +155,7 @@ public abstract class AbstractS3BaseFileService<P extends S3BaseParam> extends A
     }
 
     @Override
-    public boolean newFolder(String path, String name) {
+    public boolean uncheckNewFolder(String path, String name) {
         name = StringUtils.trimSlashes(name);
         String fullPath = StringUtils.concat(param.getBasePath(), path, name, ZFileConstant.PATH_SEPARATOR);
         fullPath = StringUtils.trimStartSlashes(fullPath);

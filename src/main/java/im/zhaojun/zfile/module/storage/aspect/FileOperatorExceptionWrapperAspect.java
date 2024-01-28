@@ -3,6 +3,7 @@ package im.zhaojun.zfile.module.storage.aspect;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
 import im.zhaojun.zfile.core.exception.file.operator.StorageSourceFileOperatorException;
 import im.zhaojun.zfile.core.util.CodeMsg;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 @Slf4j
-@Order(2)
+@Order(StoreAspectOrderConstants.FILE_OPERATOR_EXCEPTION_ASPECT_ORDER)
 public class FileOperatorExceptionWrapperAspect {
 
 
@@ -75,7 +76,9 @@ public class FileOperatorExceptionWrapperAspect {
 	}
 
 
-	@AfterThrowing(throwing = "error", value = "execution(public * im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService.uploadFile(..))")
+	@AfterThrowing(throwing = "error", value = "" +
+			"execution(public * im.zhaojun.zfile." +
+			"module.storage.service.base.AbstractProxyTransferService.uploadFile(..))")
 	public void proxyUploadExceptionWrapper(JoinPoint point, Throwable error) {
 		Integer storageId = getStorageId(point);
 		String pathAndName = getArgStr(point, 0);

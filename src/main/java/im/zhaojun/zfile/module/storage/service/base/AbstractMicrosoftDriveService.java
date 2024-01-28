@@ -83,18 +83,18 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
      * OneDrive 文件类型
      */
     private static final String ONE_DRIVE_FILE_FLAG = "file";
-    
+
     /**
      * 访问令牌字段名称
      */
     public static final String ACCESS_TOKEN_FIELD_NAME = "access_token";
-    
+
     /**
      * 刷新令牌字段名称
      */
     public static final String REFRESH_TOKEN_FIELD_NAME = "refresh_token";
-    
-    
+
+
     @Resource
     @Lazy
     private RestTemplate oneDriveRestTemplate;
@@ -116,25 +116,25 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
                 "&client_secret=" + getClientSecret() +
                 "&refresh_token=" + refreshStorageSourceConfig.getValue() +
                 "&grant_type=refresh_token";
-    
+
         if (log.isDebugEnabled()) {
             log.debug("{} 尝试刷新令牌, 请求参数: [{}]", getStorageSimpleInfo(), param);
         }
-    
+
         String authenticateUrl = AUTHENTICATE_URL.replace("{authenticateEndPoint}", getAuthenticateEndPoint());
         HttpResponse response = HttpUtil.createPost(authenticateUrl)
                 .body(param, ContentType.FORM_URLENCODED.getValue())
                 .execute();
-    
+
         String responseBody = response.body();
         int responseStatus = response.getStatus();
-    
+
         log.info("{} 刷新令牌完成. [httpStatus: {}]", getStorageSimpleInfo(), responseStatus);
-        
+
         if (responseStatus != HttpStatus.OK.value()) {
             return OAuth2TokenDTO.fail(getClientId(), getClientSecret(), getRedirectUri(), responseBody);
         }
-    
+
         JSONObject jsonBody = JSONObject.parseObject(responseBody);
         String accessToken = jsonBody.getString(ACCESS_TOKEN_FIELD_NAME);
         String refreshToken = jsonBody.getString(REFRESH_TOKEN_FIELD_NAME);
@@ -156,11 +156,11 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
                 "&code=" + code +
                 "&scope=" + getScope() +
                 "&grant_type=authorization_code";
-    
+
         if (log.isDebugEnabled()) {
             log.debug("根据授权回调 code 获取存储源类型为 [{}] 的令牌, 请求参数: [{}]", this.getStorageTypeEnum().getDescription(), param);
         }
-    
+
         String fullAuthenticateUrl = AUTHENTICATE_URL.replace("{authenticateEndPoint}", getAuthenticateEndPoint());
         HttpResponse response = HttpUtil.createPost(fullAuthenticateUrl)
                 .body(param, "application/x-www-form-urlencoded")
@@ -168,13 +168,13 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
 
         String responseBody = response.body();
         int responseStatus = response.getStatus();
-        
+
         log.info("根据授权回调 code 获取存储源类型为 [{}] 的令牌完成. [httpStatus: {}]", this.getStorageTypeEnum().getDescription(), responseStatus);
-    
+
         if (responseStatus != HttpStatus.OK.value()) {
             return OAuth2TokenDTO.fail(clientId, clientSecret, redirectUri, responseBody);
         }
-    
+
         JSONObject jsonBody = JSONObject.parseObject(responseBody);
         String accessToken = jsonBody.getString(ACCESS_TOKEN_FIELD_NAME);
         String refreshToken = jsonBody.getString(REFRESH_TOKEN_FIELD_NAME);
@@ -211,11 +211,11 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
                             getStorageSimpleInfo(), ex.getResponseBodyAsString(), fullPath, ex);
                     refreshAccessToken();
                 }
-    
+
                 HttpEntity<Object> entity = getAuthorizationHttpEntity();
                 return oneDriveRestTemplate.exchange(requestUrl, HttpMethod.GET, entity, JSONObject.class, getGraphEndPoint(), getType(), fullPath).getBody();
             });
-    
+
             if (root == null) {
                 return Collections.emptyList();
             }
@@ -226,13 +226,13 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
                 FileItemResult fileItemResult = jsonToFileItem(fileItem, folderPath);
                 result.add(fileItemResult);
             }
-    
+
             nextPageLink = root.getString("@odata.nextLink");
         } while (nextPageLink != null);
-    
+
         return result;
     }
-    
+
     @Override
     public FileItemResult getFileItem(String pathAndName) {
         String fullPath = StringUtils.concat(param.getBasePath(), pathAndName);
@@ -244,9 +244,9 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
                 HttpClientErrorException ex = (HttpClientErrorException) context.getLastThrowable();
                 log.warn("{} 调用 OneDrive 获取文件信息时出现了网络异常, 响应信息: [{}], 将尝试重新刷新 token 后再试. 获取文件路径为: {}",
                         getStorageSimpleInfo(), ex.getResponseBodyAsString(), fullPath, ex);
-        
+
             }
-    
+
             HttpEntity<Object> entity = getAuthorizationHttpEntity();
             return oneDriveRestTemplate.exchange(DRIVER_ITEM_URL, HttpMethod.GET, entity, JSONObject.class, getGraphEndPoint(), getType(), fullPath).getBody();
         });
@@ -261,7 +261,7 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
 
 
     @Override
-    public boolean newFolder(String path, String name) {
+    public boolean uncheckNewFolder(String path, String name) {
         path = StringUtils.trimStartSlashes(path);
         String fullPath = StringUtils.concatTrimEndSlashes(param.getBasePath(), path);
 
@@ -277,7 +277,7 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
         data.put("name", name);
         data.put("folder", new HashMap<>());
         data.put("@microsoft.graph.conflictBehavior", "replace");
-    
+
         HttpEntity<HashMap<Object, Object>> entity = getAuthorizationHttpEntity(data);
         ResponseEntity<JSONObject> responseEntity = oneDriveRestTemplate.exchange(requestUrl, HttpMethod.POST, entity, JSONObject.class, getGraphEndPoint(), getType(), fullPath);
         return responseEntity.getStatusCode().is2xxSuccessful();
@@ -302,7 +302,7 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
         String fullPath = StringUtils.concat(param.getBasePath(), path, name);
 
         JSONObject jsonObject = new JSONObject().fluentPut("name", newName);
-    
+
         HttpEntity<Object> entity = getAuthorizationHttpEntity(jsonObject);
         ResponseEntity<JSONObject> responseEntity = oneDriveRestTemplate.exchange(DRIVER_ITEM_OPERATOR_URL, HttpMethod.PATCH, entity, JSONObject.class, getGraphEndPoint(), getType(), fullPath);
         return responseEntity.getStatusCode().is2xxSuccessful();
@@ -321,7 +321,7 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
         ResponseEntity<JSONObject> responseEntity = oneDriveRestTemplate.exchange(CREATE_UPLOAD_SESSION_URL,
                     HttpMethod.POST, entity, JSONObject.class,
                     getGraphEndPoint(), getType(), fullPath);
-       
+
         JSONObject responseEntityBody = responseEntity.getBody();
         return responseEntityBody.getString("uploadUrl");
     }
@@ -417,8 +417,8 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
         fileItemResult.setPath(folderPath);
         return fileItemResult;
     }
-    
-    
+
+
     /**
      * 获取存储源默认的 HttpEntity 对象.
      * <br>
@@ -429,8 +429,8 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
     private HttpEntity<Object> getAuthorizationHttpEntity() {
        return getAuthorizationHttpEntity(null);
     }
-    
-    
+
+
     /**
      * 获取存储源默认的 HttpEntity 对象.
      * <br>
@@ -448,8 +448,8 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
         headers.setBearerAuth(accessTokenConfig.getValue());
         return new HttpEntity<>(body, headers);
     }
-    
-    
+
+
     /**
      * 执行可重试 1 次的任务, 对抛出的异常转为 ZFileRetryException(Unchecked Exception)
      * @param retryCallback     可重试的任务
@@ -459,14 +459,14 @@ public abstract class AbstractMicrosoftDriveService<P extends MicrosoftDrivePara
      */
     private <T> T executeRetryableRequest(RetryCallback<T, Throwable> retryCallback) {
         RetryTemplate retryTemplate = RetryTemplate.builder().maxAttempts(2).retryOn(HttpClientErrorException.class).build();
-    
+
         T result;
         try {
             result = retryTemplate.execute(retryCallback);
         } catch (Throwable e) {
             throw new ZFileRetryException("请求失败", e);
         }
-        
+
         return result;
     }
 

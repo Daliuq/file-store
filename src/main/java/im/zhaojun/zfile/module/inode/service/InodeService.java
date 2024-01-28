@@ -1,5 +1,6 @@
 package im.zhaojun.zfile.module.inode.service;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
@@ -109,7 +110,8 @@ public class InodeService {
                 eq(Inode.NAME_COLUMN_NAME, ZFileConstant.PATH_SEPARATOR);
         Inode rootInode = inodeMapper.selectOne(inodeQueryWrapper);
         Long rootId = rootInode.getId();//根节点id
-
+        if(ObjectUtil.equal(path,"/"))
+            return rootId;
         inodeQueryWrapper.clear();
         inodeQueryWrapper.eq(Inode.STORAGE_ID_COLUMN_NAME,storeId)
                 .eq(Inode.IS_DELETE_COLUMN_NAME,false);
@@ -120,20 +122,32 @@ public class InodeService {
         QueryWrapper<InodeLink> inodeLinkQueryWrapper=new QueryWrapper<>();
 
         String[] parts=path.split(ZFileConstant.PATH_SEPARATOR);
+        // 将数组转换为列表
+        List<String> partsList = new ArrayList<>(Arrays.asList(parts));
+
+// 检查并删除空串
+        partsList.removeIf(part -> ObjectUtil.equal(part, ""));
         //"/AAA/BBB/CCC" ，storeId:“/",”AAA“，”BBB”
-        //
-        for(String part:parts){
+
+        for(String part:partsList){
             inodeLinkQueryWrapper.clear();
             inodeLinkQueryWrapper.eq(InodeLink.PARENT_ID_COLUMN_NAME,rootId);
             List<InodeLink> inodeLinks = inodeLinkMapper.selectList(inodeLinkQueryWrapper);
+            boolean flag=true;
             for(InodeLink inodeLink:inodeLinks){
                 Long childId = inodeLink.getChildId();
                 Inode inode = inodeHashMap.get(childId);
-                if (inode!=null)
-                    if(inode.getName().equals(part)){
+                if (inode!=null) {
+                    if (inode.getName().equals(part)) {
+                        flag=false;
                         rootId = childId;
                         break;
                     }
+                }
+            }
+            if(flag){
+                //没找到
+                return null;
             }
         }
         return rootId;
@@ -252,5 +266,19 @@ public class InodeService {
 
         }
         return inodeItemResults;
+    }
+
+    public boolean insertWhileBuiltLink(Inode inode,String path) {
+        //不仅插入索引，并且构建索引链
+        inodeMapper.insert(inode);
+
+        Long id = inode.getId();
+        Long parentId = findInodeIdByPath(path, inode.getStorageId());//找到父节点的id
+
+        // 构建他与父节点的链接
+        inodeLinkMapper.insert(new InodeLink(
+                parentId,id
+        ));
+        return true;
     }
 }

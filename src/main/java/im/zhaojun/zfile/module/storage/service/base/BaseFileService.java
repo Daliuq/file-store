@@ -45,8 +45,9 @@ public interface BaseFileService {
      *
      * @return  是否创建成功
      */
-    boolean newFolder(String path, String name);
+    boolean uncheckNewFolder(String path, String name);
 
+    boolean newFolder(String path, String name);
     /**
      * 删除文件
      *

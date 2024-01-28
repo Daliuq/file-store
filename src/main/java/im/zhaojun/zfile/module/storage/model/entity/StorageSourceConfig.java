@@ -32,6 +32,7 @@ public class StorageSourceConfig implements Serializable {
     @ApiModelProperty(value = "存储源属性名称 name", example = "bucketName")
     private String name;
 
+    public static String NAME_COLUMN_NAME="name";
 
     @TableField(value = "`type`")
     @ApiModelProperty(value = "存储源类型")
@@ -49,7 +50,8 @@ public class StorageSourceConfig implements Serializable {
 
 
     @TableField(value = "`value`")
-    @ApiModelProperty(value = "存储源对应的值", example = "my-bucket")
+    @ApiModelProperty(value = "存储源属性对应的值", example = "my-bucket")
     private String value;
 
+    public static String VALUE_COLUMN_NAME="value";
 }

@@ -32,7 +32,7 @@ import java.lang.reflect.Method;
 @Aspect
 @Component
 @Slf4j
-@Order(StoreAspectOrderConstants.Check_Password_ASPECT_ORDER)
+@Order(StoreAspectOrderConstants.CHECK_PASSWORD_ASPECT_ORDER)
 public class CheckPasswordAspect {
 
 	@Resource

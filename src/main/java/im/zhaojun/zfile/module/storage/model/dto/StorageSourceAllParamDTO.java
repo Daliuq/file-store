@@ -6,6 +6,7 @@ import lombok.Data;
 
 /**
  * 所有存储源的全部参数
+ * 新的存储源参数在这里加
  *
  * @author zhaojun
  */
@@ -93,7 +94,7 @@ public class StorageSourceAllParamDTO {
 
     @ApiModelProperty(value = "clientSecret", example = "l:zI-_yrW75lV8M61K@z.I2K@B/On6Q1a")
     private String clientSecret;
-    
+
     @ApiModelProperty(value = "回调地址", example = "https://zfile.jun6.net/onedrive/callback")
     private String redirectUri;
 
@@ -108,8 +109,10 @@ public class StorageSourceAllParamDTO {
 
     @ApiModelProperty(value = "编码格式", example = "UTF-8")
     private String encoding;
-    
+
     @ApiModelProperty(value = "存储源 ID", example = "0AGrY0xF1D7PEUk9PV2")
     private String driveId;
-    
+
+    @ApiModelProperty(value = "是否作为历史备份服务存储源", example = "false")
+    private Boolean history;
 }

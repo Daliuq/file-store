@@ -1,5 +1,7 @@
 package im.zhaojun.zfile.module.inode.aspect;
 
+import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
@@ -28,16 +30,16 @@ import java.util.Arrays;
 @Component
 @Slf4j
 //切面执行顺序排序
-@Order(StoreAspectOrderConstants.File_TRACK_ASPECT_ORDER)
+@Order(StoreAspectOrderConstants.INODE_TRACK_ASPECT_ORDER)
 public class InodeInsertAspect {
 
     @Resource
     private InodeService inodeService;
-
     @Resource
     private InodeMapper inodeMapper;
     @Resource
     private InodeLinkService inodeLinkService;
+
     private static int PATH_AND_NAME_IN_PARAM = 0;
     private static int PATH_IN_PARAM = 0;
     private static int NAME_IN_PARAM = 1;
@@ -49,9 +51,10 @@ public class InodeInsertAspect {
      * @throws Throwable
      */
     @Around(value =
-            "( execution(* im.zhaojun.zfile.module.storage.service.impl.*.uploadFile(..)))")
+            "( execution(* im.zhaojun.zfile.module.storage.service.base." +
+                    "AbstractProxyTransferService.uploadFile(..)))")
     public Object aroundUploadFile(ProceedingJoinPoint point) throws Throwable {
-
+        System.out.println(StpUtil.isLogin());
         //获取path和name
         Object[] args = point.getArgs();
         Object result = null;
@@ -71,27 +74,27 @@ public class InodeInsertAspect {
         }
         //获取StorageId
         Object targetObject = point.getTarget();
-        AbstractProxyTransferService<?> abstractProxyTransferService = (AbstractProxyTransferService<?>) targetObject;
+        AbstractProxyTransferService<?> abstractProxyTransferService =
+                (AbstractProxyTransferService<?>) targetObject;
         Integer storageId = abstractProxyTransferService.getStorageId();
 
-
-            Long parentId = inodeService.findInodeIdByPath(path, storageId);
-            result = point.proceed();
-            // 如果目标方法执行成功，执行其他逻辑
-            //执行插入文件追踪操作
-            Inode inode = new Inode();
-            // TODO 全局唯一id生成器目前用自增
-
-            inode.setName(name);
-            inode.setIsDelete(false);
-            inode.setIsHistoricalVersionService(false);
-            inode.setStorageId(storageId);
-            inode.setIsDirectory(false);
+        Long parentId = inodeService.findInodeIdByPath(path, storageId);
+        //执行
+        result = point.proceed();
+        // 如果目标方法执行成功，执行其他逻辑
+        //执行插入文件追踪操作
+        Inode inode = new Inode();
+        // TODO 全局唯一id生成器目前用自增
+        inode.setName(name);
+        inode.setIsDelete(false);
+        inode.setIsHistoricalVersionService(false);
+        inode.setStorageId(storageId);
+        inode.setIsDirectory(false);
+        if(ObjectUtil.isNull(inodeService.findInodeIdByPath(pathAndName, storageId))){
             //在上传文件时新增一条文件id
             Long childId = inodeService.insert(inode).getId();
-
             inodeLinkService.insert(new InodeLink(parentId,childId));
-
+        }
         return result;
     }
 
@@ -150,12 +153,12 @@ public class InodeInsertAspect {
         inode.setIsHistoricalVersionService(false);
         inode.setStorageId(storageId);
         inode.setIsDirectory(true);
-        //在上传文件时新增一条文件id
-        Long childId = inodeService.insert(inode).getId();
-
-        inodeLinkService.insert(new InodeLink(parentId,childId));
-
+        if(ObjectUtil.isNull(
+                inodeService.findInodeIdByPath(pathAndName, storageId))){
+            //在上传文件时新增一条文件id
+            Long childId = inodeService.insert(inode).getId();
+            inodeLinkService.insert(new InodeLink(parentId,childId));
+        }
         return result;
     }
-
 }

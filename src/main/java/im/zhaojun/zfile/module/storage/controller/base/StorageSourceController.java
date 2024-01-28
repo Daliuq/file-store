@@ -67,7 +67,8 @@ public class StorageSourceController {
     @ApiOperation(value = "获取指定存储源参数", notes = "获取指定存储源基本信息及其参数")
     @ApiImplicitParam(paramType = "path", name = "storageId", value = "存储源 id", required = true, dataTypeClass = Integer.class)
     @GetMapping("/storage/{storageId}")
-    public AjaxJson<StorageSourceDTO> storageItem(@PathVariable Integer storageId) {
+    public AjaxJson<StorageSourceDTO> storageItem
+            (@PathVariable Integer storageId) {
         StorageSourceDTO storageSourceDTO = storageSourceService.findDTOById(storageId);
         return AjaxJson.getSuccessData(storageSourceDTO);
     }
@@ -76,7 +77,8 @@ public class StorageSourceController {
     @ApiOperationSupport(order = 3)
     @ApiOperation(value = "保存存储源参数", notes = "保存存储源的所有参数")
     @PostMapping("/storage")
-    public AjaxJson<Integer> saveStorageItem(@RequestBody SaveStorageSourceRequest saveStorageSourceRequest) {
+    public AjaxJson<Integer> saveStorageItem
+            (@RequestBody SaveStorageSourceRequest saveStorageSourceRequest) {
         Integer id = storageSourceService.saveStorageSource(saveStorageSourceRequest);
         return AjaxJson.getSuccessData(id);
     }
@@ -133,8 +135,8 @@ public class StorageSourceController {
         boolean exist = storageSourceService.existByStorageKey(storageKey);
         return AjaxJson.getSuccessData(exist);
     }
-    
-    
+
+
     @ApiOperationSupport(order = 9)
     @ApiOperation(value = "修改 readme 兼容模式", notes = "修改 readme 兼容模式是否启用")
     @ApiImplicitParams({

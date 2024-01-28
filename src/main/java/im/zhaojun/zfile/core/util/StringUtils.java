@@ -11,6 +11,8 @@ import im.zhaojun.zfile.module.config.model.dto.SystemConfigDTO;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 
 /**
@@ -419,5 +421,25 @@ public class StringUtils {
             sb.append(chars.charAt(index));
         }
         return sb.toString();
+    }
+
+    public static String getFileExtension(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty.");
+        }
+
+        int lastDotIndex = fileName.lastIndexOf(".");
+        if (lastDotIndex != -1) {
+            // 截取从最后一个点（.）之后的部分作为后缀
+            return fileName.substring(lastDotIndex + 1);
+        } else {
+            // 如果没有点，说明没有后缀
+            return "";
+        }
+    }
+
+    public static String getFilename(String filePath) {
+        Path path = Paths.get(filePath);
+        return path.getFileName().toString();
     }
 }

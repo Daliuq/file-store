@@ -111,7 +111,7 @@ public class UpYunServiceImpl extends AbstractBaseFileService<UpYunParam> {
         } catch (IOException | UpException e) {
             throw ExceptionUtil.wrapRuntime(e);
         }
-    
+
         if (fileInfo == null) {
             throw ExceptionUtil.wrapRuntime(new FileNotFoundException());
         }
@@ -134,7 +134,7 @@ public class UpYunServiceImpl extends AbstractBaseFileService<UpYunParam> {
     }
 
     @Override
-    public boolean newFolder(String path, String name) {
+    public boolean uncheckNewFolder(String path, String name) {
         String fullPath = StringUtils.concat(true, param.getBasePath(), path, name);
         try {
             return upYun.mkDir(fullPath, true);

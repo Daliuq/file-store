@@ -15,6 +15,8 @@ import im.zhaojun.zfile.module.storage.model.enums.StorageTypeEnum;
 import im.zhaojun.zfile.module.storage.model.param.WebdavParam;
 import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
+import im.zhaojun.zfile.module.storage.service.base.LocalService;
+import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -103,7 +105,7 @@ public class WebdavServiceImpl extends AbstractProxyTransferService<WebdavParam>
 	}
 
 	@Override
-	public boolean newFolder(String path, String name) {
+	public boolean uncheckNewFolder(String path, String name) {
 		try {
 			sardine.createDirectory(getRequestPath(path, name));
 			return true;
@@ -155,7 +157,7 @@ public class WebdavServiceImpl extends AbstractProxyTransferService<WebdavParam>
 	}
 
 	@Override
-	public void uploadFile(String pathAndName, InputStream inputStream) {
+	public void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
 		try {
 			pathAndName = getRequestPath(pathAndName);
 			sardine.put(pathAndName, inputStream);
@@ -177,4 +179,68 @@ public class WebdavServiceImpl extends AbstractProxyTransferService<WebdavParam>
 		return fileItemResult;
 	}
 
+	@Override
+	public InputStream getDownloadStream(String pathAndName) throws IOException {
+		try {
+			// 使用 Sardine 获取文件内容的 InputStream
+			// 如果需要对输入流进行进一步处理，可以在这里添加逻辑
+			// 返回获取到的文件内容的 InputStream
+			return sardine.get(getRequestPath(pathAndName));
+		} catch (IOException e) {
+			throw ExceptionUtil.wrapRuntime(e);
+		}
+	}
+
+	@Override
+	public Boolean downloadFromThisToLocalServer(String downloadFilePathAndName, String unloadFilePathAndName, LocalService localService) throws Exception {
+		//1，调用this里的方法，获取输入流资源InputStreamResource
+		InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		if (downloadStreamResource != null) {
+			//InputStream在uploadFileStreamToLocal中关闭
+			localService.uploadFileStreamToLocal(unloadFilePathAndName,downloadStreamResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public Boolean uploadFromLocalServerToThis(String uploadFilePathAndName, String localFilePathAndName, LocalService localService) throws Exception {
+		//1，调用localService中方法，get输入流
+		InputStream localFileResource = localService.getLocalFileResource(localFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		//InputStream在uploadStream中关闭
+		if (localFileResource != null) {
+			this.uploadFile(uploadFilePathAndName,localFileResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public Boolean moveFromThisToOtherServer(
+			String downloadFilePathAndName,
+			String unloadFilePathAndName,
+			MoverService otherService) throws Exception {
+		//1，调用this里的方法，获取输入流资源InputStreamResource
+		InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		if (downloadStreamResource != null) {
+			//InputStream在uploadStream中关闭
+			otherService.uploadStream(
+					unloadFilePathAndName,
+					downloadStreamResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public void uploadStream(String unloadFilePathAndName, InputStream inputStream) {
+		//InputStream在uploadFil中关闭
+		this.uploadFile(unloadFilePathAndName,inputStream);
+	}
 }

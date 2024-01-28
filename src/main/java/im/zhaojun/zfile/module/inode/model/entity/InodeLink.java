@@ -22,7 +22,7 @@ public class InodeLink implements Serializable {
 
 
     @ApiModelProperty(value = "子id", example = "2")
-    @TableField("child_id") // 数据库表中的字段名
+    @TableId("child_id") // 数据库表中的字段名
     private Long childId;
 
     public static String CHILD_ID_COLUMN_NAME="child_id";

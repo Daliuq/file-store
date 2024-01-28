@@ -27,7 +27,13 @@ public class FileHistory {
     @TableField(value = "inode_id")
     private Long inodeId;
 
-    @ApiModelProperty(value = "备份时间",example = "yyyy-MM-dd")
-    @TableField(value = "back_up_time")
+    public static String INODE_ID_COLUMN_NAME= "inode_id";
+
+    @ApiModelProperty(value = "备份时间",example = "yyyy/MM/dd HH:mm:ss")
+    @TableField(value = "bake_up_time")
     private Date bakeUpTime;
+
+    @ApiModelProperty(value = "备份时间",example = "example")
+    @TableField(value = "name")
+    private String name;
 }

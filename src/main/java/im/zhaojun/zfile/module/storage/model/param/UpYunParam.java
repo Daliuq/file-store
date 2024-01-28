@@ -9,7 +9,7 @@ import lombok.Getter;
  * @author zhaojun
  */
 @Getter
-public class UpYunParam implements IStorageParam {
+public class UpYunParam extends BaseParam{
 
 	@StorageParamItem(name = "存储空间名称")
 	private String bucketName;

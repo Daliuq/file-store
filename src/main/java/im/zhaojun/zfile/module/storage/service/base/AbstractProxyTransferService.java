@@ -17,7 +17,9 @@ import java.io.InputStream;
  *
  * @author zhaojun
  */
-public abstract class AbstractProxyTransferService<P extends ProxyTransferParam> extends AbstractBaseFileService<P>{
+public abstract class AbstractProxyTransferService<P extends ProxyTransferParam>
+		extends AbstractBaseFileService<P>
+		implements  MoverService{
 
 
 	/**
@@ -84,7 +86,8 @@ public abstract class AbstractProxyTransferService<P extends ProxyTransferParam>
 		String domain = systemConfigService.getDomain();
 		String storageKey = storageSourceService.findStorageKeyById(storageId);
 		String pathAndName = StringUtils.concat(true, path, name);
-		return StringUtils.concat(domain, PROXY_UPLOAD_LINK_PREFIX, storageKey, pathAndName);
+		return StringUtils.concat(
+				domain, PROXY_UPLOAD_LINK_PREFIX, storageKey, pathAndName);
 	}
 
 	/**
@@ -98,8 +101,11 @@ public abstract class AbstractProxyTransferService<P extends ProxyTransferParam>
 	 *
 	 */
 
-	public abstract void uploadFile(String pathAndName, InputStream inputStream);
+	public abstract void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream);
 
+	public void uploadFile(String pathAndName, InputStream inputStream){
+		this.uploadFileWithoutInodeChange(pathAndName,inputStream);
+	}
 
 	/**
 	 * 代理下载指定文件
@@ -110,5 +116,6 @@ public abstract class AbstractProxyTransferService<P extends ProxyTransferParam>
 	 * @return  文件响应.
 	 */
 	public abstract ResponseEntity<Resource> downloadToStream(String pathAndName) throws IOException;
+
 
 }

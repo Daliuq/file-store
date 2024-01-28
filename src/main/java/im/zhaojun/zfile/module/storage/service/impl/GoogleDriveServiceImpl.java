@@ -27,6 +27,8 @@ import im.zhaojun.zfile.module.storage.model.param.GoogleDriveParam;
 import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
 import im.zhaojun.zfile.module.storage.service.StorageSourceConfigService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
+import im.zhaojun.zfile.module.storage.service.base.LocalService;
+import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import im.zhaojun.zfile.module.storage.service.base.RefreshTokenService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -49,10 +51,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -196,7 +195,7 @@ public class GoogleDriveServiceImpl extends AbstractProxyTransferService<GoogleD
 
 
 	@Override
-	public boolean newFolder(String path, String name) {
+	public boolean uncheckNewFolder(String path, String name) {
 		HttpResponse httpResponse = HttpRequest.post(DRIVE_FILE_URL)
 				.header("Authorization", "Bearer " + param.getAccessToken())
 				.body(new JSONObject()
@@ -251,7 +250,7 @@ public class GoogleDriveServiceImpl extends AbstractProxyTransferService<GoogleD
 	}
 
 	@Override
-	public void uploadFile(String pathAndName, InputStream inputStream) {
+	public void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
 		String boundary = IdUtil.fastSimpleUUID();
 		String fileName = FileUtil.getName(pathAndName);
 		String folderName = StringUtils.getParentPath(pathAndName);
@@ -448,6 +447,82 @@ public class GoogleDriveServiceImpl extends AbstractProxyTransferService<GoogleD
 		}
 
 		return fileItemResult;
+	}
+
+	@Override
+	public InputStream getDownloadStream(String pathAndName) throws IOException {
+		String fileId = getIdByPath(pathAndName);
+
+		HttpServletRequest request = RequestHolder.getRequest();
+
+		HttpRequest httpRequest = HttpUtil.createGet(DRIVE_FILE_URL + "/" + fileId);
+		httpRequest.header("Authorization", "Bearer " + param.getAccessToken());
+		httpRequest.body("alt=media");
+		httpRequest.header(HttpHeaders.RANGE, request.getHeader(HttpHeaders.RANGE));
+
+		// 发起异步请求并等待其完成
+		HttpResponse httpResponse = httpRequest.executeAsync();
+		checkHttpResponseIsError(httpResponse);
+
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+		// 将响应体写入到 ByteArrayOutputStream
+		httpResponse.writeBody(byteArrayOutputStream, true, null);
+
+		// 将 ByteArrayOutputStream 转为 ByteArrayInputStream
+		return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+	}
+
+	@Override
+	public Boolean downloadFromThisToLocalServer(String downloadFilePathAndName, String unloadFilePathAndName, LocalService localService) throws Exception {
+		//1，调用this里的方法，获取输入流资源InputStreamResource
+		InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		if (downloadStreamResource != null) {
+			//InputStream在uploadFileStreamToLocal中关闭
+			localService.uploadFileStreamToLocal(unloadFilePathAndName,downloadStreamResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public Boolean uploadFromLocalServerToThis(String uploadFilePathAndName, String localFilePathAndName, LocalService localService) throws Exception {
+		//1，调用localService中方法，get输入流
+		InputStream localFileResource = localService.getLocalFileResource(localFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		//InputStream在uploadStream中关闭
+		if (localFileResource != null) {
+			this.uploadFile(uploadFilePathAndName,localFileResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public Boolean moveFromThisToOtherServer(String downloadFilePathAndName
+			, String unloadFilePathAndName
+			, MoverService otherService) throws Exception {
+		//1，调用this里的方法，获取输入流资源InputStreamResource
+		InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		if (downloadStreamResource != null) {
+			//InputStream在uploadStream中关闭
+			otherService.uploadStream(
+					unloadFilePathAndName,
+					downloadStreamResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public void uploadStream(String unloadFilePathAndName, InputStream inputStream) {
+		//InputStream在uploadFil中关闭
+		this.uploadFile(unloadFilePathAndName,inputStream);
 	}
 
 

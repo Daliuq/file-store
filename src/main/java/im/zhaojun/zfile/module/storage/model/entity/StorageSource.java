@@ -99,15 +99,17 @@ public class StorageSource implements Serializable {
     @TableField(value = "default_switch_to_img_mode")
     @ApiModelProperty(value = "是否默认开启图片模式", example = "true")
     private Boolean defaultSwitchToImgMode;
-    
-    
+
+
     @TableField(value = "compatibility_readme")
     @ApiModelProperty(value = "兼容 readme 模式", example = "true", notes = "兼容模式, 目录文档读取 readme.md 文件")
     private Boolean compatibilityReadme;
 
     public boolean getAllowOperator() {
         // 允许文件操作，且允许匿名操作或者当前登录用户是管理员
-        return BooleanUtil.isTrue(enableFileOperator) && (BooleanUtil.isTrue(enableFileAnnoOperator) || StpUtil.isLogin());
+        return BooleanUtil.isTrue(enableFileOperator)
+                && (BooleanUtil.isTrue(enableFileAnnoOperator)
+                || StpUtil.isLogin());
     }
 
 }

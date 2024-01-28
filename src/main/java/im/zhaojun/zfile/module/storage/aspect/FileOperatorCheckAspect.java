@@ -1,6 +1,7 @@
 package im.zhaojun.zfile.module.storage.aspect;
 
 import cn.hutool.core.util.BooleanUtil;
+import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
 import im.zhaojun.zfile.core.exception.StorageSourceException;
 import im.zhaojun.zfile.core.util.CodeMsg;
 import im.zhaojun.zfile.module.storage.model.entity.StorageSource;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -23,6 +25,7 @@ import javax.annotation.Resource;
 @Aspect
 @Component
 @Slf4j
+@Order(StoreAspectOrderConstants.FILE_OPERATOR_CHECK_ASPECT_ORDER)
 public class FileOperatorCheckAspect {
 
 	@Resource
@@ -66,7 +69,7 @@ public class FileOperatorCheckAspect {
 	public Object uploadAround(ProceedingJoinPoint point) throws Throwable {
 		return check(point, FileOperatorTypeEnum.UPLOAD);
 	}
-	
+
 	/**
 	 * 重命名文件/文件夹权限校验
 	 *
@@ -99,12 +102,14 @@ public class FileOperatorCheckAspect {
 		// 判断是否允许文件操作. 如果不允许, 则抛出异常
 		StorageSource storageSource = storageSourceService.findById(storageId);
 		boolean allowOperator = storageSource.getAllowOperator();
-		
+
 		if (BooleanUtil.isFalse(allowOperator)) {
-			throw new StorageSourceException(CodeMsg.STORAGE_SOURCE_ILLEGAL_OPERATION, storageId, "非法进行无权限的操作:" + fileOperatorType.getName());
+			throw new StorageSourceException(
+					CodeMsg.STORAGE_SOURCE_ILLEGAL_OPERATION,
+					storageId, "非法进行无权限的操作:" + fileOperatorType.getName());
 		}
-	
+
 		return point.proceed();
 	}
-	
+
 }

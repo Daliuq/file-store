@@ -21,7 +21,6 @@ public enum StorageTypeEnum implements IEnum {
      * 当前系统支持的所有存储源类型
      */
     LOCAL("local", "本地存储"),
-
     LOCALSCRATCH("localscratch","本地临时数据"),
     ALIYUN("aliyun", "阿里云 OSS"),
     WEBDAV("webdav", "WebDAV"),

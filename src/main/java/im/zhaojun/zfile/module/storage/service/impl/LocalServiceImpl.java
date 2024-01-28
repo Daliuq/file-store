@@ -10,17 +10,14 @@ import im.zhaojun.zfile.core.exception.file.init.InitializeStorageSourceExceptio
 import im.zhaojun.zfile.core.util.CodeMsg;
 import im.zhaojun.zfile.core.util.RequestHolder;
 import im.zhaojun.zfile.core.util.StringUtils;
-import im.zhaojun.zfile.core.util.ZipUtil;
 import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
 import im.zhaojun.zfile.module.storage.model.enums.StorageTypeEnum;
 import im.zhaojun.zfile.module.storage.model.param.LocalParam;
 import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
-import im.zhaojun.zfile.module.storage.service.base.DecompressorService;
 import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import im.zhaojun.zfile.module.storage.service.base.LocalService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.ByteArrayResource;
@@ -41,8 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 /**
  * @author zhaojun
@@ -50,7 +45,8 @@ import java.util.zip.ZipInputStream;
 @Service
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
-public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> implements LocalService, MoverService {
+public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam>
+        implements LocalService, MoverService {
 
     private static final String PREVIEW_PARAM_NAME = "preview";
 
@@ -112,7 +108,7 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
 
 
     @Override
-    public boolean newFolder(String path, String name) {
+    public boolean uncheckNewFolder(String path, String name) {
         checkPathSecurity(path);
         checkNameSecurity(name);
 
@@ -181,19 +177,23 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
 
 
     @Override
-    public void uploadFile(String pathAndName, InputStream inputStream) {
+    public void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
         checkPathSecurity(pathAndName);
 
         String baseFilePath = param.getFilePath();
-        String uploadPath = StringUtils.removeDuplicateSlashes(baseFilePath + ZFileConstant.PATH_SEPARATOR + pathAndName);
+        String uploadPath =
+                StringUtils.removeDuplicateSlashes
+                        (baseFilePath + ZFileConstant.PATH_SEPARATOR
+                                + pathAndName);
         // 如果目录不存在则创建
         String parentPath = FileUtil.getParent(uploadPath, 1);
         if (!FileUtil.exist(parentPath)) {
             FileUtil.mkdir(parentPath);
         }
-
+        System.out.println("到此1111");
         File uploadToFileObj = new File(uploadPath);
-        BufferedOutputStream outputStream = FileUtil.getOutputStream(uploadToFileObj);
+        BufferedOutputStream outputStream = FileUtil
+                .getOutputStream(uploadToFileObj);
         IoUtil.copy(inputStream, outputStream);
         IoUtil.close(outputStream);
         IoUtil.close(inputStream);
@@ -201,7 +201,7 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
 
     @Override//获取文件下载流
     @Nullable
-    public FileSystemResource getDownloadStreamResource(String pathAndName) {
+    public InputStream getDownloadStream(String pathAndName) throws IOException {
         checkPathSecurity(pathAndName);
 
         File file = new File(StringUtils.removeDuplicateSlashes(param.getFilePath() + ZFileConstant.PATH_SEPARATOR + pathAndName));
@@ -209,7 +209,7 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
             return null;
         }
 
-        return new FileSystemResource(file);
+        return new FileSystemResource(file).getInputStream();
     }
 
     @Override
@@ -307,26 +307,25 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
     @Transactional
     public Boolean downloadFromThisToLocalServer(String downloadFilePathAndName, String unloadFilePathAndName, LocalService localService) throws Exception {
         //1，调用this里的方法，获取输入流资源InputStreamResource
-        FileSystemResource inputStreamResource = this.getDownloadStreamResource(downloadFilePathAndName);
+        InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
         //2. 调用localService的写入方法，写入//3. 返回成功失败
-        if (inputStreamResource != null) {
+        if (downloadStreamResource != null) {
             //InputStream在uploadFileStreamToLocal中关闭
-            localService.uploadFileStreamToLocal(unloadFilePathAndName,inputStreamResource.getInputStream());
+            localService.uploadFileStreamToLocal(unloadFilePathAndName,downloadStreamResource);
             return true;
         }else{
             return false;
         }
-
     }
 
     @Override
     public Boolean uploadFromLocalServerToThis(String uploadFilePathAndName, String localFilePathAndName, LocalService localService) throws Exception {
         //1，调用localService中方法，get输入流
-        FileSystemResource localFileResource = localService.getLocalFileResource(localFilePathAndName);
+        InputStream localFileResource = localService.getLocalFileResource(localFilePathAndName);
         //2. 调用localService的写入方法，写入//3. 返回成功失败
         //InputStream在uploadStream中关闭
         if (localFileResource != null) {
-            this.uploadFile(uploadFilePathAndName,localFileResource.getInputStream());
+            this.uploadFile(uploadFilePathAndName,localFileResource);
             return true;
         }else{
             return false;
@@ -336,11 +335,13 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
     @Override
     public Boolean moveFromThisToOtherServer(String downloadFilePathAndName, String unloadFilePathAndName, MoverService otherService) throws Exception {
         //1，调用this里的方法，获取输入流资源InputStreamResource
-        FileSystemResource inputStreamResource = this.getDownloadStreamResource(downloadFilePathAndName);
+        InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
         //2. 调用localService的写入方法，写入//3. 返回成功失败
-        if (inputStreamResource != null) {
+        if (downloadStreamResource != null) {
             //InputStream在uploadStream中关闭
-            otherService.uploadStream(unloadFilePathAndName,inputStreamResource.getInputStream());
+            otherService.uploadStream(
+                    unloadFilePathAndName,
+                    downloadStreamResource);
             return true;
         }else{
             return false;
@@ -353,8 +354,8 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam> i
     }
 
     @Override
-    public FileSystemResource getLocalFileResource(String localFilePathAndName) {
-        return this.getDownloadStreamResource(localFilePathAndName);
+    public InputStream getLocalFileResource(String localFilePathAndName) throws IOException {
+        return this.getDownloadStream(localFilePathAndName);
     }
 
     @Override

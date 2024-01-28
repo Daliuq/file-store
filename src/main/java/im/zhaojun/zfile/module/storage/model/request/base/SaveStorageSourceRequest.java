@@ -54,7 +54,8 @@ public class SaveStorageSourceRequest {
     private boolean searchIgnoreCase;
 
     @TableField(value = "`search_mode`")
-    @ApiModelProperty(value = "搜索模式", example = "SEARCH_CACHE", notes = "仅从缓存中搜索或直接全量搜索")
+    @ApiModelProperty(value = "搜索模式", example = "SEARCH_CACHE",
+            notes = "仅从缓存中搜索或直接全量搜索")
     private SearchModeEnum searchMode;
 
     @ApiModelProperty(value = "排序值", example = "1")
@@ -65,7 +66,7 @@ public class SaveStorageSourceRequest {
 
     @ApiModelProperty(value = "是否默认开启图片模式", example = "true")
     private boolean defaultSwitchToImgMode;
-    
+
     @ApiModelProperty(value = "兼容 readme 模式", example = "true", notes = "兼容模式, 目录文档读取 readme.md 文件")
     private boolean compatibilityReadme;
 

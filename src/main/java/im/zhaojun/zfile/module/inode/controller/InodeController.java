@@ -1,18 +1,37 @@
 package im.zhaojun.zfile.module.inode.controller;
 
+import cn.hutool.core.util.ObjectUtil;
+import com.beust.ah.A;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.github.xiaoymin.knife4j.annotations.ApiSort;
+import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.AjaxJson;
+import im.zhaojun.zfile.core.util.StringUtils;
+import im.zhaojun.zfile.module.inode.chain.InodeChain;
+import im.zhaojun.zfile.module.inode.chain.InodeContext;
+import im.zhaojun.zfile.module.inode.model.entity.Inode;
+import im.zhaojun.zfile.module.inode.model.request.BatchDeleteInodeRequest;
 import im.zhaojun.zfile.module.inode.model.request.InodeListRequest;
+import im.zhaojun.zfile.module.inode.model.request.InsertInodeRequest;
+import im.zhaojun.zfile.module.inode.model.request.UpdateInodeRequest;
+import im.zhaojun.zfile.module.inode.model.result.InodeItemResult;
+import im.zhaojun.zfile.module.inode.service.InodeService;
+import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.model.entity.StorageSource;
+import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
+import im.zhaojun.zfile.module.storage.model.request.operator.BatchDeleteRequest;
+import im.zhaojun.zfile.module.storage.model.result.FileInfoResult;
 import im.zhaojun.zfile.module.storage.model.result.StorageSourceResult;
+import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 @Api(tags = "文件索引模块")
@@ -29,13 +48,91 @@ public class InodeController {
      * @param inodeListRequest
      * @return
      */
+    @Resource
+    private InodeService inodeService;
+
+    @Resource
+    private StorageSourceContext storageSourceContext;
+    @Resource
+    private InodeChain inodeChain;
     @ApiOperationSupport(order = 1)
-    @ApiOperation(value = "获取存储源列表", notes = "获取所有已启用的存储源, 并且按照后台顺序排序")
-    @GetMapping("/list")
-    public AjaxJson<List<StorageSourceResult>> findInodeListByName(InodeListRequest inodeListRequest) {
+    @ApiOperation(value = "通过文件名称获取对于的索引节点，用于查询", notes = "右匹配原则")
+    @GetMapping("/name")
+    public AjaxJson<List<InodeItemResult>> findInodeListByName(InodeListRequest inodeListRequest) throws Exception {
         //设置默认值
         inodeListRequest.handleDefaultValue();
 
-        return null;
+        List<InodeItemResult> listByName = inodeService.findListByName(inodeListRequest.getName());
+
+        InodeContext inodeContext=InodeContext.builder()
+                .inodeItemResultList(listByName)
+                .inodeListRequest(inodeListRequest).build();
+
+        inodeChain.execute(inodeContext);
+        return  AjaxJson.getSuccessData(listByName);
+    }
+    @ApiOperationSupport(order = 2)
+    @ApiOperation(value = "用于在非本地代理上传文件服务的上传结束后更新索引节点",notes = "更新索引节点")
+    @PostMapping("/insert")
+    public AjaxJson<Boolean> insertInode(InsertInodeRequest insertInodeRequest){
+        Inode inode = new Inode();
+        inode.setIsDelete(false);
+        inode.setIsDirectory(insertInodeRequest.getIsFolder());
+        inode.setName(insertInodeRequest.getName());
+        inode.setStorageId(inode.getStorageId());
+
+        inodeService.insertWhileBuiltLink(
+                inode,
+                insertInodeRequest.getPath());
+        return AjaxJson.getSuccessData(true);
+    }
+
+    @ApiOperationSupport(order = 3)
+    @ApiOperation(value = "用于在非本地代理上传文件服务的上传结束后更新索引节点",notes = "更新索引节点")
+    @PostMapping("/update")
+    public AjaxJson<Boolean> updateInode(UpdateInodeRequest updateInodeRequest){
+        //1.由path和name获取Inode_id；
+        Long inodeIdByPath = inodeService.findInodeIdByPath(
+                StringUtils.removeDuplicateSlashes(
+                        ZFileConstant.PATH_SEPARATOR + updateInodeRequest.getPath()
+                                + ZFileConstant.PATH_SEPARATOR + updateInodeRequest.getName()
+                )
+                , storageSourceContext.getByStorageKey(
+                        updateInodeRequest.getStorageKey()
+                ).getStorageId()
+        );
+        Inode inode = new Inode();
+        inode.setName(updateInodeRequest.getNewName());
+        inode.setId(inodeIdByPath);
+        inodeService.update(inode);
+        return AjaxJson.getSuccessData(true);
+    }
+
+    @ApiOperationSupport(order = 4)
+    @ApiOperation(value = "用于在非本地代理上传文件服务的上传结束后更新索引节点",notes = "更新索引节点")
+    @PostMapping("/delete")
+    public AjaxJson<Boolean> deleteInode(BatchDeleteInodeRequest batchDeleteInodeRequest){
+        AbstractBaseFileService<?> fileService = storageSourceContext.getByStorageKey(batchDeleteInodeRequest.getStorageKey());
+        Integer storageId = fileService.getStorageId();
+        List<BatchDeleteRequest.DeleteItem> deleteItems = batchDeleteInodeRequest.getDeleteItems();
+        for (BatchDeleteRequest.DeleteItem deleteItem : deleteItems) {
+            String path = deleteItem.getPath();
+            FileTypeEnum type = deleteItem.getType();
+            String name = deleteItem.getName();
+            Long inodeId = inodeService.findInodeIdByPath(
+                    StringUtils.removeDuplicateSlashes(
+                            path + ZFileConstant.PATH_SEPARATOR
+                                    + name
+                    ), storageId
+            );
+            Inode newInode = new Inode();
+            newInode.setId(inodeId);
+            if(ObjectUtil.equal(type,FileTypeEnum.FOLDER)){
+                inodeService.deleteWithChildInLogically(newInode);
+            }else{
+                inodeService.deleteInLogically(newInode);
+            }
+        }
+        return AjaxJson.getSuccessData(true);
     }
 }

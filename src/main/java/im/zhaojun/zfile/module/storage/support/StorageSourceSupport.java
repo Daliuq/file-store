@@ -36,19 +36,22 @@ public class StorageSourceSupport {
     private static final Map<Class<? extends AbstractBaseFileService>, List<StorageSourceParamDef>> STORAGE_SOURCE_PARAM_CACHE = new ConcurrentHashMap<>();
 
     /**
-     * 获取指定存储源所有的参数列表定义
+     * 获取指定
+     *
      *
      * @return 存储源参数列表定义
      */
     public static List<StorageSourceParamDef> getStorageSourceParamList(AbstractBaseFileService abstractBaseFileService) {
+        //1.确定类类型
         Class<? extends AbstractBaseFileService> clazz;
         if (AopUtils.isAopProxy(abstractBaseFileService)) {
-            clazz = (Class<? extends AbstractBaseFileService>) AopUtils.getTargetClass(abstractBaseFileService);
+            clazz = (Class<? extends AbstractBaseFileService>)
+                    AopUtils.getTargetClass(abstractBaseFileService);
         } else {
             clazz = abstractBaseFileService.getClass();
         }
         IStorageParam storageParam = abstractBaseFileService.getParam();
-        // 如果缓存中有, 则直接返回
+        //2. 如果缓存中有, 则直接返回
         if (STORAGE_SOURCE_PARAM_CACHE.containsKey(clazz)) {
             return STORAGE_SOURCE_PARAM_CACHE.get(clazz);
         }

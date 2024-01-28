@@ -1,5 +1,9 @@
 package im.zhaojun.zfile.module.storage.service.base;
-import org.springframework.core.io.FileSystemResource;
+
+import java.io.IOException;
+import java.io.InputStream;
+
 public interface DownloadStreamableService {
-    FileSystemResource getDownloadStreamResource(String pathAndName);
+
+    InputStream getDownloadStream(String pathAndName) throws IOException;
 }

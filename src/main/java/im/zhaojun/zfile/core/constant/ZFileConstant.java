@@ -16,6 +16,7 @@ public class ZFileConstant {
 
     public static final String PATH_SEPARATOR = "/";
 
+    public static final String FILE_EXTENSION_SEPARATOR = ".";
     /**
      * 最大支持文本文件大小为 ? KB 的文件内容.
      */

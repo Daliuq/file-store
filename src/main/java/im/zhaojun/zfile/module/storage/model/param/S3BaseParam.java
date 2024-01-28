@@ -10,7 +10,7 @@ import lombok.Getter;
  * @author zhaojun
  */
 @Getter
-public class S3BaseParam implements IStorageParam {
+public class S3BaseParam extends BaseParam{
 
 	@StorageParamItem(name = "AccessKey", order = 1)
 	private String accessKey;

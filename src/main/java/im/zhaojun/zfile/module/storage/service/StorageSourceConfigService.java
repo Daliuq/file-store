@@ -35,10 +35,10 @@ public class StorageSourceConfigService {
 
     @Resource
     private StorageSourceConfigMapper storageSourceConfigMapper;
-    
+
     @Resource
     private StorageSourceConfigService storageSourceConfigService;
-    
+
     /**
      * 根据存储源 ID 查询存储源拓展配置, 并按照存储源 id 排序
      *
@@ -73,7 +73,7 @@ public class StorageSourceConfigService {
                 .orElse(null);
     }
 
-    
+
     /**
      * 根据存储源 id 删除所有设置
      *
@@ -100,13 +100,13 @@ public class StorageSourceConfigService {
     @Transactional(rollbackFor = Exception.class)
     public void saveBatch(Integer storageId, Collection<StorageSourceConfig> configList) {
         storageSourceConfigService.deleteByStorageId(storageId);
-    
+
         log.info("更新存储源 ID 为 {} 的参数配置 {} 条", storageId, configList.size());
-    
+
         configList.forEach(storageSourceConfig -> {
             storageSourceConfig.setStorageId(storageId);
             storageSourceConfigMapper.insert(storageSourceConfig);
-    
+
             if (log.isDebugEnabled()) {
                 log.debug("新增存储源参数配置, 存储源 ID: {}, 存储源类型: {}, 参数名: {}",
                         storageSourceConfig.getStorageId(), storageSourceConfig.getType().getDescription(),
@@ -114,7 +114,7 @@ public class StorageSourceConfigService {
             }
         });
     }
-    
+
     /**
      * 批量更新存储源设置
      *
@@ -123,11 +123,12 @@ public class StorageSourceConfigService {
      */
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(key = "#storageId")
-    public void updateBatch(Integer storageId, List<StorageSourceConfig> storageSourceConfigList) {
+    public void updateBatch(Integer storageId,
+                            List<StorageSourceConfig> storageSourceConfigList) {
         storageSourceConfigList.forEach(storageSourceConfig -> {
             storageSourceConfig.setStorageId(storageId);
             storageSourceConfigMapper.updateById(storageSourceConfig);
-    
+
             if (log.isDebugEnabled()) {
                 log.debug("更新存储源参数配置, 存储源 ID: {}, 存储源类型: {}, 参数名: {}",
                         storageSourceConfig.getStorageId(), storageSourceConfig.getType().getDescription(),
@@ -135,8 +136,8 @@ public class StorageSourceConfigService {
             }
         });
     }
-    
-    
+
+
     /**
      * 将存储源所有参数转换成指定存储类型的参数对象列表
      *
@@ -149,19 +150,22 @@ public class StorageSourceConfigService {
      * @param   storageSourceAllParam
      *          存储源所有参数
      */
-    public List<StorageSourceConfig> toStorageSourceConfigList(Integer storageId, StorageTypeEnum storageType, StorageSourceAllParamDTO storageSourceAllParam) {
+    public List<StorageSourceConfig>
+    toStorageSourceConfigList(Integer storageId
+            , StorageTypeEnum storageType
+            , StorageSourceAllParamDTO storageSourceAllParam) {
         // 返回结果
         List<StorageSourceConfig> result = new ArrayList<>();
-        
+
         // 获取该存储源类型需要的参数列表
         List<StorageSourceParamDef> storageSourceParamList = StorageSourceContext.getStorageSourceParamListByType(storageType);
-        
+
         // 遍历参数列表, 将参数转换成存储源参数对象
         for (StorageSourceParamDef storageSourceParam : storageSourceParamList) {
             // 根据字段名称获取字段值
             Object fieldValue = ReflectUtil.getFieldValue(storageSourceAllParam, storageSourceParam.getKey());
             String fieldStrValue = Convert.toStr(fieldValue);
-            
+
             // 校验是否必填, 如果不符合则抛出异常
             boolean paramRequired = storageSourceParam.isRequired();
             if (paramRequired && StrUtil.isEmpty(fieldStrValue)) {
@@ -169,13 +173,13 @@ public class StorageSourceConfigService {
                 throw new InitializeStorageSourceException(CodeMsg.STORAGE_SOURCE_INIT_STORAGE_CONFIG_FAIL,
                         storageId, errMsg).setResponseExceptionMessage(true);
             }
-            
+
             // 校验如果有默认值，则填充默认值
             String paramDefaultValue = storageSourceParam.getDefaultValue();
             if (StrUtil.isNotEmpty(paramDefaultValue) && StrUtil.isEmpty(fieldStrValue)) {
                 fieldStrValue = paramDefaultValue;
             }
-            
+
             // 添加到结果列表
             StorageSourceConfig storageSourceConfig = new StorageSourceConfig();
             storageSourceConfig.setTitle(storageSourceParam.getName());
@@ -185,8 +189,8 @@ public class StorageSourceConfigService {
             storageSourceConfig.setStorageId(storageId);
             result.add(storageSourceConfig);
         }
-        
+
         return result;
     }
-    
+
 }

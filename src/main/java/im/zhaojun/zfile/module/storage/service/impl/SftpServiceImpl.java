@@ -17,6 +17,8 @@ import im.zhaojun.zfile.module.storage.model.enums.StorageTypeEnum;
 import im.zhaojun.zfile.module.storage.model.param.SftpParam;
 import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
+import im.zhaojun.zfile.module.storage.service.base.LocalService;
+import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -27,10 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,7 +90,7 @@ public class SftpServiceImpl extends AbstractProxyTransferService<SftpParam> {
 
 
 	@Override
-	public boolean newFolder(String path, String name) {
+	public boolean uncheckNewFolder(String path, String name) {
 		sftp.mkdir(StringUtils.concat(param.getBasePath(), path, name));
 		return true;
 	}
@@ -140,12 +139,12 @@ public class SftpServiceImpl extends AbstractProxyTransferService<SftpParam> {
 		try {
 			pathAndName = StringUtils.concat(param.getBasePath(), pathAndName);
 			String fileName = FileUtil.getName(pathAndName);
-			
+
 			OutputStream outputStream = response.getOutputStream();
-			
+
 			response.setContentType(MediaType.APPLICATION_OCTET_STREAM.getType());
 			response.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + StringUtils.encodeAllIgnoreSlashes(fileName));
-			
+
 			sftp.download(pathAndName, outputStream);
 			return null;
 		} catch (IOException e) {
@@ -155,7 +154,7 @@ public class SftpServiceImpl extends AbstractProxyTransferService<SftpParam> {
 
 
 	@Override
-	public synchronized void uploadFile(String pathAndName, InputStream inputStream) {
+	public synchronized void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
 		String fullPath = StringUtils.concat(param.getBasePath(), pathAndName);
 		String fileName = FileUtil.getName(pathAndName);
 		String folderName = FileUtil.getParent(fullPath, 1);
@@ -176,4 +175,78 @@ public class SftpServiceImpl extends AbstractProxyTransferService<SftpParam> {
 		return fileItemResult;
 	}
 
+	@Override
+	public InputStream getDownloadStream(String pathAndName) throws IOException {
+		// 如果配置了域名，还访问代理下载 URL, 则抛出异常进行提示.
+		if (StrUtil.isNotEmpty(param.getDomain())) {
+			throw new DisableProxyDownloadException(CodeMsg.STORAGE_SOURCE_FILE_DISABLE_PROXY_DOWNLOAD, storageId);
+		}
+
+		HttpServletResponse response = RequestHolder.getResponse();
+		pathAndName = StringUtils.concat(param.getBasePath(), pathAndName);
+		String fileName = FileUtil.getName(pathAndName);
+
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+		response.setContentType(MediaType.APPLICATION_OCTET_STREAM.getType());
+		response.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + StringUtils.encodeAllIgnoreSlashes(fileName));
+
+		sftp.download(pathAndName, byteArrayOutputStream);
+
+		// 将 ByteArrayOutputStream 转为 ByteArrayInputStream
+		return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+	}
+
+	@Override
+	public Boolean downloadFromThisToLocalServer(String downloadFilePathAndName, String unloadFilePathAndName, LocalService localService) throws Exception {
+		//1，调用this里的方法，获取输入流资源InputStreamResource
+		InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		if (downloadStreamResource != null) {
+			//InputStream在uploadFileStreamToLocal中关闭
+			localService.uploadFileStreamToLocal(unloadFilePathAndName,downloadStreamResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public Boolean uploadFromLocalServerToThis(String uploadFilePathAndName, String localFilePathAndName, LocalService localService) throws Exception {
+		//1，调用localService中方法，get输入流
+		InputStream localFileResource = localService.getLocalFileResource(localFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		//InputStream在uploadStream中关闭
+		if (localFileResource != null) {
+			this.uploadFile(uploadFilePathAndName,localFileResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public Boolean moveFromThisToOtherServer(
+			String downloadFilePathAndName,
+			String unloadFilePathAndName,
+			MoverService otherService) throws Exception {
+		//1，调用this里的方法，获取输入流资源InputStreamResource
+		InputStream downloadStreamResource = this.getDownloadStream(downloadFilePathAndName);
+		//2. 调用localService的写入方法，写入//3. 返回成功失败
+		if (downloadStreamResource != null) {
+			//InputStream在uploadStream中关闭
+			otherService.uploadStream(
+					unloadFilePathAndName,
+					downloadStreamResource);
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	@Override
+	public void uploadStream(String unloadFilePathAndName, InputStream inputStream) {
+		//InputStream在uploadFil中关闭
+		this.uploadFile(unloadFilePathAndName,inputStream);
+	}
 }
