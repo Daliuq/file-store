@@ -96,16 +96,16 @@ public class historyController {
         Date now = new Date();
         //5.2.2然后在这个文件夹中存入以文件时间命名的文件
 
-        historyService.uploadFileWithoutInodeChange(
+        Long size = historyService.uploadFileWithoutInodeChange(
                 StringUtils.removeDuplicateSlashes(
                         ZFileConstant.PATH_SEPARATOR
-                                +inodeId
-                                +ZFileConstant.PATH_SEPARATOR
-                                +DateUtils.historyServiceFormatDate(now)
-                                +ZFileConstant.FILE_EXTENSION_SEPARATOR
-                                +StringUtils.getFileExtension(filePath)
+                                + inodeId
+                                + ZFileConstant.PATH_SEPARATOR
+                                + DateUtils.historyServiceFormatDate(now)
+                                + ZFileConstant.FILE_EXTENSION_SEPARATOR
+                                + StringUtils.getFileExtension(filePath)
                 )
-                ,file.getInputStream());
+                , file.getInputStream());
 
         //5.3记录备份记录
         FileHistory fileHistory =new FileHistory();
@@ -114,6 +114,7 @@ public class historyController {
         fileHistory.setBakeUpTime(now);
         fileHistory.setBakeUpStorageId(historyService.getStorageId());
         fileHistory.setName(StringUtils.getFilename(filePath));
+        fileHistory.setSize(size);
 
         fileHistoryService.insert(fileHistory);
 
@@ -129,9 +130,6 @@ public class historyController {
             passwordFieldExpression = "[0].password")
     public AjaxJson<HistoryInfoResult> findInodeListByName(
             @Valid @RequestBody  HistoryInfoRequest historyItemRequest) throws Exception {
-        System.out.println(FilePathUtils.convertPathToBackend(
-                historyItemRequest.getPath()
-        ));
         List<FileHistory> fileHistories = fileHistoryService.selectByInodeId(
                 inodeService.findInodeIdByPath(
                         //将/{path}/{name}/{type}改成/path/name.type
@@ -142,7 +140,7 @@ public class historyController {
                                 getByStorageKey(
                                         historyItemRequest.getStorageKey()).getStorageId()
                 ));
-        System.out.println(fileHistories);
+
         List<HistoryItemResult> historyItemResults=new ArrayList<>();
 
         for (FileHistory item: fileHistories) {
@@ -169,6 +167,8 @@ public class historyController {
                                             item.getName()
                                     )));
             historyItemResult.setType(FileTypeEnum.FILE);
+            historyItemResult.setSize(item.getSize());
+
             historyItemResults.add(historyItemResult);
         }
 

@@ -19,6 +19,7 @@ import im.zhaojun.zfile.module.storage.service.base.LocalService;
 import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPFile;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -175,11 +176,21 @@ public class FtpServiceImpl extends AbstractProxyTransferService<FtpParam> {
 
 
     @Override
-    public synchronized void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
-        String fullPath = StringUtils.concat(param.getBasePath(), pathAndName);
-        String fileName = FileUtil.getName(pathAndName);
-        String folderName = FileUtil.getParent(fullPath, 1);
-        ftp.upload(folderName, fileName, inputStream);
+    public synchronized Long uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
+        try {
+            String fullPath = StringUtils.concat(param.getBasePath(), pathAndName);
+            String fileName = FileUtil.getName(pathAndName);
+            String folderName = FileUtil.getParent(fullPath, 1);
+            // 使用 CountingInputStream 包装原始输入流
+            CountingInputStream countingInputStream = new CountingInputStream(inputStream);
+            // 上传文件
+            ftp.upload(folderName, fileName, countingInputStream);
+            // 获取上传的文件大小
+            // 返回上传的文件大小
+            return countingInputStream.getByteCount();
+        } catch (Exception e) {
+            throw ExceptionUtil.wrapRuntime(e);
+        }
     }
 
 

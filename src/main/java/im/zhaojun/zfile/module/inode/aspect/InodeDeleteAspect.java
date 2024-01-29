@@ -38,7 +38,7 @@ public class InodeDeleteAspect {
      * @return
      * @throws Throwable
      */
-    @Around("( execution(* im.zhaojun.zfile.module.storage.service.impl.*.deleteFile(..)))")
+    @Around("( execution(* im.zhaojun.zfile.module.storage.service.base.BaseFileService.deleteFile(..)))")
     public Object aroundDeleteFile(ProceedingJoinPoint point) throws Throwable {
         Object[] args = point.getArgs();
         Object result = null;
@@ -65,7 +65,7 @@ public class InodeDeleteAspect {
         return result;
     }
 
-    @Around("( execution(* im.zhaojun.zfile.module.storage.service.impl.*.deleteFolder(..)))")
+    @Around("( execution(* im.zhaojun.zfile.module.storage.service.base.BaseFileService.deleteFolder(..)))")
     public Object aroundDeleteFolder(ProceedingJoinPoint point) throws Throwable {
         Object[] args = point.getArgs();
         Object result = null;

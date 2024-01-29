@@ -177,7 +177,7 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam>
 
 
     @Override
-    public void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
+    public Long uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
         checkPathSecurity(pathAndName);
 
         String baseFilePath = param.getFilePath();
@@ -190,13 +190,14 @@ public class LocalServiceImpl extends AbstractProxyTransferService<LocalParam>
         if (!FileUtil.exist(parentPath)) {
             FileUtil.mkdir(parentPath);
         }
-        System.out.println("到此1111");
+
         File uploadToFileObj = new File(uploadPath);
         BufferedOutputStream outputStream = FileUtil
                 .getOutputStream(uploadToFileObj);
-        IoUtil.copy(inputStream, outputStream);
+        Long size = IoUtil.copy(inputStream, outputStream);
         IoUtil.close(outputStream);
         IoUtil.close(inputStream);
+        return size;
     }
 
     @Override//获取文件下载流

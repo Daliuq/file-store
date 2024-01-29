@@ -18,10 +18,4 @@ public class FilePathUtils {
         return frontendPath;
     }
 
-    public static void main(String[] args) {
-        // 示例用法
-        String frontendPath = "/example/path/txt";
-        String backendPath = convertPathToBackend(frontendPath);
-        System.out.println(backendPath);
-    }
 }

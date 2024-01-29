@@ -33,7 +33,13 @@ public class FileHistory {
     @TableField(value = "bake_up_time")
     private Date bakeUpTime;
 
-    @ApiModelProperty(value = "备份时间",example = "example")
+    public static String BACK_UP_TIME_COLUMN_NAME= "bake_up_time";
+
+    @ApiModelProperty(value = "备份名称",example = "name")
     @TableField(value = "name")
     private String name;
+
+    @ApiModelProperty(value = "备份时的大小",example = "4096")
+    @TableField(value = "size")
+    private Long size;
 }

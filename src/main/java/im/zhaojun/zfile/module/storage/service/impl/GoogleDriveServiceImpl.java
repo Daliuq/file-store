@@ -32,6 +32,7 @@ import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import im.zhaojun.zfile.module.storage.service.base.RefreshTokenService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.CountingInputStream;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -250,7 +251,7 @@ public class GoogleDriveServiceImpl extends AbstractProxyTransferService<GoogleD
 	}
 
 	@Override
-	public void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
+	public Long uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
 		String boundary = IdUtil.fastSimpleUUID();
 		String fileName = FileUtil.getName(pathAndName);
 		String folderName = StringUtils.getParentPath(pathAndName);
@@ -259,26 +260,34 @@ public class GoogleDriveServiceImpl extends AbstractProxyTransferService<GoogleD
 				.fluentPut("name", fileName)
 				.fluentPut("parents", Collections.singletonList(getIdByPath(folderName)))
 				.toJSONString();
-		HttpEntity entity = MultipartEntityBuilder.create()
-				.setMimeSubtype("related")
-				.setBoundary(boundary)
-				.addTextBody(boundary, jsonString, ContentType.APPLICATION_JSON)
-				.addBinaryBody(boundary, inputStream)
-				.build();
 
-		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-			HttpUriRequest httpUriRequest = RequestBuilder.post(DRIVE_FILE_UPLOAD_URL)
-					.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + param.getAccessToken())
-					.setEntity(entity)
+		// 使用 CountingInputStream 进行计数
+		try (CountingInputStream countingInputStream = new CountingInputStream(inputStream)) {
+			HttpEntity entity = MultipartEntityBuilder.create()
+					.setMimeSubtype("related")
+					.setBoundary(boundary)
+					.addTextBody(boundary, jsonString, ContentType.APPLICATION_JSON)
+					.addBinaryBody(boundary, countingInputStream)
 					.build();
 
-			CloseableHttpResponse response = httpClient.execute(httpUriRequest);
-			checkHttpResponseIsError(response);
+			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+				HttpUriRequest httpUriRequest = RequestBuilder.post(DRIVE_FILE_UPLOAD_URL)
+						.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + param.getAccessToken())
+						.setEntity(entity)
+						.build();
+
+				CloseableHttpResponse response = httpClient.execute(httpUriRequest);
+				checkHttpResponseIsError(response);
+
+				// 获取上传的文件大小
+				return countingInputStream.getByteCount();
+			} catch (IOException e) {
+				throw ExceptionUtil.wrapRuntime(e);
+			}
 		} catch (IOException e) {
 			throw ExceptionUtil.wrapRuntime(e);
 		}
 	}
-
 	@Override
 	public ResponseEntity<Resource> downloadToStream(String pathAndName) {
 		String fileId = getIdByPath(pathAndName);

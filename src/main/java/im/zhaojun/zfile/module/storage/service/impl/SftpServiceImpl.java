@@ -20,6 +20,7 @@ import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService
 import im.zhaojun.zfile.module.storage.service.base.LocalService;
 import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.CountingInputStream;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.Resource;
@@ -154,11 +155,23 @@ public class SftpServiceImpl extends AbstractProxyTransferService<SftpParam> {
 
 
 	@Override
-	public synchronized void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
-		String fullPath = StringUtils.concat(param.getBasePath(), pathAndName);
-		String fileName = FileUtil.getName(pathAndName);
-		String folderName = FileUtil.getParent(fullPath, 1);
-		sftp.upload(folderName, fileName, inputStream);
+	public synchronized Long uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
+		try {
+			String fullPath = StringUtils.concat(param.getBasePath(), pathAndName);
+			String fileName = FileUtil.getName(pathAndName);
+			String folderName = FileUtil.getParent(fullPath, 1);
+			// 使用 CountingInputStream 包装原始输入流
+			CountingInputStream countingInputStream = new CountingInputStream(inputStream);
+			// 上传文件
+			sftp.upload(folderName, fileName, countingInputStream);
+			// 获取上传的文件大小
+			long fileSize = countingInputStream.getByteCount();
+
+			// 返回上传的文件大小
+			return fileSize;
+		} catch (Exception e) {
+			throw ExceptionUtil.wrapRuntime(e);
+		}
 	}
 
 

@@ -337,7 +337,6 @@ public class StorageSourceContext implements ApplicationContextAware {
         if (storageId == null) {
             return null;
         }
-        System.out.println("111:"+getByStorageId(storageId).getStorageId());
         return getByStorageId(storageId);
     }
 }

@@ -34,11 +34,10 @@ public class HistoryInsertAndUpdateAspect {
     private InodeService inodeService;
     @Resource
     private FileHistoryService fileHistoryService;
-
-    private static int PATH_AND_NAME_IN_PARAM = 0;
-
-    private static int INPUT_STREAM_IN_PARAM = 1;
-
+    private static final int PATH_AND_NAME_IN_PARAM = 0;
+    private static final int PATH_IN_PARAM = 0;
+    private static final int NAME_IN_PARAM = 1;
+    private static final int NEW_NAME_IN_PARAM = 2;
     /**
      * 切入于插入和更新，用户可以在插入时选择历史服务或在已有文件中开启历史服务
      * @param point
@@ -48,15 +47,14 @@ public class HistoryInsertAndUpdateAspect {
     @Around(value =
             "( execution(* im.zhaojun.zfile.module.storage.service.base." +
                     "AbstractProxyTransferService.uploadFile(..)))")
-    public Object aroundUploadFileWhenUploadFile(ProceedingJoinPoint point) throws Throwable {
+    public Object aroundUploadFile(ProceedingJoinPoint point) throws Throwable {
 
         //1获取path和name
         Object[] args = point.getArgs();
         Object result = null;
         String pathSeparator = ZFileConstant.PATH_SEPARATOR;
-        String pathAndName = (String) args[HistoryInsertAndUpdateAspect.PATH_AND_NAME_IN_PARAM];
-
-
+        String pathAndName = (String)
+                args[HistoryInsertAndUpdateAspect.PATH_AND_NAME_IN_PARAM];
         // 1.1使用 split 方法拆分路径与名称
         String[] parts = pathAndName.split(pathSeparator);
         String path;
@@ -69,6 +67,7 @@ public class HistoryInsertAndUpdateAspect {
             path = pathSeparator; // 如果没有路径，设置 path 为根目录 "/"
             name = parts[0];
         }
+
         //2获取StorageId
         Object targetObject = point.getTarget();
         AbstractProxyTransferService<?> abstractProxyTransferService = (AbstractProxyTransferService<?>) targetObject;
@@ -76,11 +75,7 @@ public class HistoryInsertAndUpdateAspect {
 
         //3执行
         result = point.proceed();
-        System.out.println("历史");
-        System.out.println("执行了历史服务");
-        System.out.println(StringUtils.removeDuplicateSlashes(
-                path + ZFileConstant.PATH_SEPARATOR
-                        + name));
+
         //4现在手上有存储元id和path和name，获取索引id,由于索引是文件更新后更新的，所有也要等待执行后获取
         Long inodeId = inodeService.findInodeIdByPath(
                 StringUtils.removeDuplicateSlashes(
@@ -89,7 +84,6 @@ public class HistoryInsertAndUpdateAspect {
                 , storageId);
 
         //5备份文件
-
         AbstractProxyTransferService<?> historyService;
         FileHistory oldHistory = fileHistoryService.selectOneByInodeId(inodeId);
         if(!ObjectUtil.isNull(oldHistory)){
@@ -106,24 +100,22 @@ public class HistoryInsertAndUpdateAspect {
             );
         }
         //5.2.1创建文件夹，如果没有的话
-
         historyService.uncheckNewFolder( StringUtils.removeDuplicateSlashes(
                 ZFileConstant.PATH_SEPARATOR), String.valueOf(inodeId));
         Date now = new Date();
         // 使用 SimpleDateFormat 定义自己的日期格式
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
         //5.2.2然后在这个文件夹中存入以文件时间命名的文件
-
-        historyService.uploadFileWithoutInodeChange(
+        Long size = historyService.uploadFileWithoutInodeChange(
                 StringUtils.removeDuplicateSlashes(
                         ZFileConstant.PATH_SEPARATOR
-                             +inodeId
-                             +ZFileConstant.PATH_SEPARATOR
-                             +dateFormat.format(now)
-                             +ZFileConstant.FILE_EXTENSION_SEPARATOR
-                             +StringUtils.getFileExtension(name)
+                                + inodeId
+                                + ZFileConstant.PATH_SEPARATOR
+                                + dateFormat.format(now)
+                                + ZFileConstant.FILE_EXTENSION_SEPARATOR
+                                + StringUtils.getFileExtension(name)
                 )
-                ,abstractProxyTransferService.getDownloadStream(pathAndName));
+                , abstractProxyTransferService.getDownloadStream(pathAndName));
 
         //5.3记录备份记录
         FileHistory fileHistory =new FileHistory();
@@ -132,10 +124,49 @@ public class HistoryInsertAndUpdateAspect {
         fileHistory.setBakeUpTime(new Date());
         fileHistory.setBakeUpStorageId(historyService.getStorageId());
         fileHistory.setName(name);
-        System.out.println(inodeId);
+        fileHistory.setSize(size);
+
         fileHistoryService.insert(fileHistory);
         return result;
     }
 
-//   TODO，在文件名更新时
+    @Around(value =
+            "( execution(* im.zhaojun.zfile.module.storage.service.base." +
+                    "BaseFileService.renameFile(..)))")
+    public Object aroundUpdateFileName(ProceedingJoinPoint point) throws Throwable {
+        //1.获取path和name，newName
+        Object[] args = point.getArgs();
+        Object result = null;
+        String pathSeparator = ZFileConstant.PATH_SEPARATOR;
+        String path = (String)
+                args[HistoryInsertAndUpdateAspect.PATH_AND_NAME_IN_PARAM];
+        String name = (String)
+                args[HistoryInsertAndUpdateAspect.NAME_IN_PARAM];
+        String newName= (String)
+                args[HistoryInsertAndUpdateAspect.NEW_NAME_IN_PARAM];
+
+        //2.获取StorageId
+        Object targetObject = point.getTarget();
+        AbstractProxyTransferService<?> abstractProxyTransferService = (AbstractProxyTransferService<?>) targetObject;
+        Integer storageId = abstractProxyTransferService.getStorageId();
+
+        //3.执行
+        result = point.proceed();
+
+        //4.现在手上有存储元id和path和name，获取索引id,由于索引是文件更新后更新的，所有也要等待执行后获取
+        Long inodeId = inodeService.findInodeIdByPath(
+                StringUtils.removeDuplicateSlashes(
+                        path + ZFileConstant.PATH_SEPARATOR
+                                + newName)
+                , storageId);
+
+        //5.通过inodeId更新，最后一个备份的文件名称
+        fileHistoryService.
+                updateLastBackUpNameForInodeIdAndOrderByBackUpTime(inodeId,newName);
+
+
+        return result;
+
+    }
+
 }

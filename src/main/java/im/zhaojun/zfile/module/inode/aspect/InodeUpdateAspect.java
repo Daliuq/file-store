@@ -35,8 +35,8 @@ public class InodeUpdateAspect {
      * @throws Throwable
      */
     //这两个都是基本文件服务能实现的，前端不用同步更新
-    @Around("( execution(* im.zhaojun.zfile.module.storage.service.impl.*.renameFile(..)))" +
-            "||( execution(* im.zhaojun.zfile.module.storage.service.impl.*.renameFolder(..)))")
+    @Around("( execution(* im.zhaojun.zfile.module.storage.service.base.BaseFileService.renameFile(..)))" +
+            "||( execution(* im.zhaojun.zfile.module.storage.service.base.BaseFileService.renameFolder(..)))")
     public Object aroundRenameFileAndFolder(ProceedingJoinPoint point) throws Throwable {
         Object[] args = point.getArgs();
         Object result = null;

@@ -19,6 +19,7 @@ import im.zhaojun.zfile.module.storage.service.base.LocalService;
 import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.CountingInputStream;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.Resource;
@@ -157,10 +158,18 @@ public class WebdavServiceImpl extends AbstractProxyTransferService<WebdavParam>
 	}
 
 	@Override
-	public void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
+	public Long uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream) {
 		try {
 			pathAndName = getRequestPath(pathAndName);
-			sardine.put(pathAndName, inputStream);
+
+			// 使用 CountingInputStream 进行计数
+			try (CountingInputStream countingInputStream = new CountingInputStream(inputStream)) {
+				sardine.put(pathAndName, countingInputStream);
+
+				// 获取上传的文件大小
+				long fileSize = countingInputStream.getByteCount();
+				return fileSize;
+			}
 		} catch (IOException e) {
 			throw ExceptionUtil.wrapRuntime(e);
 		}

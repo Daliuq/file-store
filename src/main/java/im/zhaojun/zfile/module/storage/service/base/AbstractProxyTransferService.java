@@ -101,7 +101,7 @@ public abstract class AbstractProxyTransferService<P extends ProxyTransferParam>
 	 *
 	 */
 
-	public abstract void uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream);
+	public abstract Long uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream);
 
 	public void uploadFile(String pathAndName, InputStream inputStream){
 		this.uploadFileWithoutInodeChange(pathAndName,inputStream);

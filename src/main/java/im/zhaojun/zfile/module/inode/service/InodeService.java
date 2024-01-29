@@ -60,7 +60,7 @@ public class InodeService {
      * @param inode
      * @return
      */
-    @CacheEvict(value = "file-track", key = "#inode.id")
+
     public Inode update(Inode inode){
         UpdateWrapper<Inode> wrapper= new UpdateWrapper<>();
         wrapper.eq("id",inode.getId());
@@ -73,7 +73,7 @@ public class InodeService {
      * @param inode
      * @return
      */
-    @CacheEvict(value = "file-track", key = "#inode.id")
+
     public Inode deleteInLogically(Inode inode){
         UpdateWrapper<Inode> wrapper= new UpdateWrapper<>();
         inode.setIsDelete(Boolean.TRUE);
@@ -87,7 +87,7 @@ public class InodeService {
      * @param inode
      * @return
      */
-    @CacheEvict(value = "file-track", key = "#inode.id")
+
     public Inode deleteIndeed(Inode inode){
         QueryWrapper<Inode> wrapper= new QueryWrapper<>();
         wrapper.eq("id",inode.getId());
@@ -102,7 +102,7 @@ public class InodeService {
      * @param storeId
      * @return
      */
-    @Cacheable(value = "find-id-by-path",key = "#storeId+'-'+#path")
+
     public Long findInodeIdByPath(String path,Integer storeId){
 
         QueryWrapper<Inode> inodeQueryWrapper=new QueryWrapper<>();

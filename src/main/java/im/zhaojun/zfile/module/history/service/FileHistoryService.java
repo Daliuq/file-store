@@ -113,4 +113,15 @@ public class FileHistoryService {
         queryWrapper.eq(FileHistory.INODE_ID_COLUMN_NAME,inodeId);
         return fileHistoryMapper.selectList(queryWrapper);
     }
+
+    public void updateLastBackUpNameForInodeIdAndOrderByBackUpTime(Long inodeId,String newName){
+
+        QueryWrapper<FileHistory> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq(FileHistory.INODE_ID_COLUMN_NAME,inodeId)
+                .orderByDesc(true,FileHistory.BACK_UP_TIME_COLUMN_NAME)
+                ;
+        FileHistory old = fileHistoryMapper.selectOne(queryWrapper);
+        old.setName(newName);
+        fileHistoryMapper.updateById(old);
+    }
 }

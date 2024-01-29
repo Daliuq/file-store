@@ -5,6 +5,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
+import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.inode.mapper.InodeMapper;
 import im.zhaojun.zfile.module.inode.model.entity.Inode;
 import im.zhaojun.zfile.module.inode.model.entity.InodeLink;
@@ -54,7 +55,6 @@ public class InodeInsertAspect {
             "( execution(* im.zhaojun.zfile.module.storage.service.base." +
                     "AbstractProxyTransferService.uploadFile(..)))")
     public Object aroundUploadFile(ProceedingJoinPoint point) throws Throwable {
-        System.out.println(StpUtil.isLogin());
         //获取path和name
         Object[] args = point.getArgs();
         Object result = null;
@@ -124,15 +124,14 @@ public class InodeInsertAspect {
     }
 
     //新建文件夹，boolean newFolder(String path, String name);
-    @Around(value = "execution(* im.zhaojun.zfile.module.storage.service.impl.*.newFolder(..))")
+    @Around(value = "execution(* im.zhaojun.zfile.module.storage.service.base." +
+            "BaseFileService.newFolder(..))")
     public Object aroundNewFolder(ProceedingJoinPoint point) throws Throwable{
         //获取path和name
         Object[] args = point.getArgs();
         Object result = null;
         String pathSeparator = ZFileConstant.PATH_SEPARATOR;
-        String pathAndName = (String) args[InodeInsertAspect.PATH_AND_NAME_IN_PARAM];
-        // 使用 split 方法拆分路径与名称
-        String[] parts = pathAndName.split(pathSeparator);
+
         String path = (String) args[InodeInsertAspect.PATH_IN_PARAM];
         String name = (String) args[InodeInsertAspect.NAME_IN_PARAM];
         // 检查分割后的数组是否包含路径和名称
@@ -154,7 +153,11 @@ public class InodeInsertAspect {
         inode.setStorageId(storageId);
         inode.setIsDirectory(true);
         if(ObjectUtil.isNull(
-                inodeService.findInodeIdByPath(pathAndName, storageId))){
+                inodeService.findInodeIdByPath(
+                        StringUtils.removeDuplicateSlashes(
+                                ZFileConstant.PATH_SEPARATOR+
+                                        path+ZFileConstant.PATH_SEPARATOR+name
+                        ), storageId))){
             //在上传文件时新增一条文件id
             Long childId = inodeService.insert(inode).getId();
             inodeLinkService.insert(new InodeLink(parentId,childId));
