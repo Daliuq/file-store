@@ -4,7 +4,7 @@ import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.inode.model.entity.Inode;
-import im.zhaojun.zfile.module.inode.service.InodeService;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;

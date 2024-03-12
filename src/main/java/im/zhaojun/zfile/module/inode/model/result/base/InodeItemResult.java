@@ -1,4 +1,4 @@
-package im.zhaojun.zfile.module.inode.model.result;
+package im.zhaojun.zfile.module.inode.model.result.base;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import im.zhaojun.zfile.core.util.StringUtils;

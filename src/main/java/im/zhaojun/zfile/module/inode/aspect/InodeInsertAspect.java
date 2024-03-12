@@ -1,6 +1,5 @@
 package im.zhaojun.zfile.module.inode.aspect;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
@@ -9,8 +8,8 @@ import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.inode.mapper.InodeMapper;
 import im.zhaojun.zfile.module.inode.model.entity.Inode;
 import im.zhaojun.zfile.module.inode.model.entity.InodeLink;
-import im.zhaojun.zfile.module.inode.service.InodeLinkService;
-import im.zhaojun.zfile.module.inode.service.InodeService;
+import im.zhaojun.zfile.module.inode.service.impl.InodeLinkService;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;

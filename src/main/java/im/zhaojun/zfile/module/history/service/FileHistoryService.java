@@ -8,10 +8,9 @@ import im.zhaojun.zfile.core.util.ParamUtils;
 import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.history.mapper.FileHistoryMapper;
 import im.zhaojun.zfile.module.history.modle.entity.FileHistory;
-import im.zhaojun.zfile.module.history.modle.result.HistoryInfoResult;
 import im.zhaojun.zfile.module.inode.mapper.InodeMapper;
 import im.zhaojun.zfile.module.inode.model.entity.Inode;
-import im.zhaojun.zfile.module.inode.service.InodeService;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.model.param.IStorageParam;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
@@ -105,7 +104,8 @@ public class FileHistoryService {
     public FileHistory selectOneByInodeId(Long inodeId) {
         QueryWrapper<FileHistory> queryWrapper=new QueryWrapper<>();
         queryWrapper.eq(FileHistory.INODE_ID_COLUMN_NAME,inodeId);
-        return fileHistoryMapper.selectOne(queryWrapper);
+        queryWrapper.last("limit 1");
+        return fileHistoryMapper.selectList(queryWrapper).get(0);
     }
 
     public List<FileHistory> selectByInodeId(Long inodeId) {

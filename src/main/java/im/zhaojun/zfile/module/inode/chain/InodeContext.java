@@ -1,14 +1,12 @@
 package im.zhaojun.zfile.module.inode.chain;
 
 import im.zhaojun.zfile.module.inode.model.request.InodeListRequest;
-import im.zhaojun.zfile.module.inode.model.result.InodeItemResult;
+import im.zhaojun.zfile.module.inode.model.result.base.InodeItemResult;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.chain.impl.ContextBase;
-import org.springframework.context.annotation.DependsOn;
 
 import java.util.List;
 

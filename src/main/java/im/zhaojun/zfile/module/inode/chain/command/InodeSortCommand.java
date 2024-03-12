@@ -1,12 +1,8 @@
 package im.zhaojun.zfile.module.inode.chain.command;
 
-import im.zhaojun.zfile.core.util.FileComparator;
 import im.zhaojun.zfile.module.inode.chain.InodeContext;
 import im.zhaojun.zfile.module.inode.model.request.InodeListRequest;
-import im.zhaojun.zfile.module.inode.model.result.InodeItemResult;
-import im.zhaojun.zfile.module.storage.chain.FileContext;
-import im.zhaojun.zfile.module.storage.model.request.base.FileListRequest;
-import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
+import im.zhaojun.zfile.module.inode.model.result.base.InodeItemResult;
 import org.apache.commons.chain.Command;
 import org.apache.commons.chain.Context;
 import org.springframework.stereotype.Component;

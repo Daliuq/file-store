@@ -1,13 +1,12 @@
 package im.zhaojun.zfile.module.history.aspect;
 
-import cn.hutool.core.util.ObjectUtil;
 import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.ParamUtils;
 import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.history.modle.entity.FileHistory;
 import im.zhaojun.zfile.module.history.service.FileHistoryService;
-import im.zhaojun.zfile.module.inode.service.InodeService;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
 import lombok.extern.slf4j.Slf4j;
@@ -85,20 +84,12 @@ public class HistoryInsertAndUpdateAspect {
 
         //5备份文件
         AbstractProxyTransferService<?> historyService;
-        FileHistory oldHistory = fileHistoryService.selectOneByInodeId(inodeId);
-        if(!ObjectUtil.isNull(oldHistory)){
-            //5.1.1如果曾经在某历史服务备份过
-            historyService =
-                    (AbstractProxyTransferService<?>)
-                            storageSourceContext.getByStorageId(oldHistory.getBakeUpStorageId());
-        }else{
-            //5.1.2获取要备份的存储源（随机获取）获取历史服务
-            historyService =
-                    (AbstractProxyTransferService<?>)
-            storageSourceContext.getRandomByStorageConfig(
-                        ParamUtils.HISTORY_PARAM_NAME,Boolean.TRUE.toString()
-            );
-        }
+
+        //5.1.1获取要备份的存储源（随机获取）获取历史服务
+        historyService =
+                (AbstractProxyTransferService<?>) storageSourceContext.getRandomByStorageConfig(
+                        ParamUtils.HISTORY_PARAM_NAME,Boolean.TRUE.toString());
+
         //5.2.1创建文件夹，如果没有的话
         historyService.uncheckNewFolder( StringUtils.removeDuplicateSlashes(
                 ZFileConstant.PATH_SEPARATOR), String.valueOf(inodeId));

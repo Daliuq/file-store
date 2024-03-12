@@ -1,4 +1,4 @@
-package im.zhaojun.zfile.module.inode.service;
+package im.zhaojun.zfile.module.inode.service.impl;
 
 import im.zhaojun.zfile.module.inode.mapper.InodeLinkMapper;
 import im.zhaojun.zfile.module.inode.model.entity.InodeLink;

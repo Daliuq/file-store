@@ -1,9 +1,8 @@
 package im.zhaojun.zfile.core.util;
 
 import cn.hutool.core.comparator.CompareUtil;
-import im.zhaojun.zfile.module.inode.model.result.InodeItemResult;
+import im.zhaojun.zfile.module.inode.model.result.base.InodeItemResult;
 import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
-import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
 
 import java.util.Comparator;
 

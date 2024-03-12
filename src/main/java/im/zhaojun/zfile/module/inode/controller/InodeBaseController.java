@@ -1,7 +1,6 @@
 package im.zhaojun.zfile.module.inode.controller;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.beust.ah.A;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.github.xiaoymin.knife4j.annotations.ApiSort;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
@@ -14,14 +13,11 @@ import im.zhaojun.zfile.module.inode.model.request.BatchDeleteInodeRequest;
 import im.zhaojun.zfile.module.inode.model.request.InodeListRequest;
 import im.zhaojun.zfile.module.inode.model.request.InsertInodeRequest;
 import im.zhaojun.zfile.module.inode.model.request.UpdateInodeRequest;
-import im.zhaojun.zfile.module.inode.model.result.InodeItemResult;
-import im.zhaojun.zfile.module.inode.service.InodeService;
+import im.zhaojun.zfile.module.inode.model.result.base.InodeItemResult;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
-import im.zhaojun.zfile.module.storage.model.entity.StorageSource;
 import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
 import im.zhaojun.zfile.module.storage.model.request.operator.BatchDeleteRequest;
-import im.zhaojun.zfile.module.storage.model.result.FileInfoResult;
-import im.zhaojun.zfile.module.storage.model.result.StorageSourceResult;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -40,7 +36,7 @@ import java.util.List;
 @RequestMapping("/api/inode")
 @RestController
 
-public class InodeController {
+public class InodeBaseController {
     /**
      *
      * 前端在搜索栏搜索东西，只传输名字,返回元数据
