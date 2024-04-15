@@ -7,12 +7,14 @@ import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
 import io.swagger.annotations.Api;
+import org.apache.commons.io.IOUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.beans.Beans;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
@@ -49,7 +51,11 @@ public class ProxyUploadController {
 
 		// 进行上传.
 		AbstractProxyTransferService<?> proxyUploadService = (AbstractProxyTransferService<?>) storageServiceByKey;
-		proxyUploadService.uploadFile(filePath, file.getInputStream());
+		ByteArrayOutputStream baos =new ByteArrayOutputStream();
+		IOUtils.copy(file.getInputStream(),baos);
+		file.getInputStream().close();
+		proxyUploadService.uploadFile(filePath, baos.toByteArray());
+		baos.close();
 		return AjaxJson.getSuccess();
 	}
 

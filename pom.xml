@@ -277,6 +277,19 @@
             <artifactId>joda-time</artifactId>
             <version>2.10.1</version>
         </dependency>
+
+        <!-- 其他依赖 -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.16.1</version> <!-- 使用你需要的版本 -->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-imaging</artifactId>
+            <version>1.0.0-alpha4</version>
+        </dependency>
+
     </dependencies>
 
     <build>

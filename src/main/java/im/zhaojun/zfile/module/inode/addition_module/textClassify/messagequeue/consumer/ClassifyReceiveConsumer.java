@@ -10,6 +10,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 
 @Component
 public class ClassifyReceiveConsumer {
@@ -21,9 +22,10 @@ public class ClassifyReceiveConsumer {
         ClassifyMessageReceive classifyMessageReceive = JSON.parseObject(message, ClassifyMessageReceive.class);
         //2.调用mongodb，存入该索引的信息到inode表
         InodeAdditionMessage inodeAdditionMessage=new InodeAdditionMessage();
+        System.out.println(classifyMessageReceive);
         inodeAdditionMessage.setId(classifyMessageReceive.getInodeId());
-        inodeAdditionMessage.setFileClassifyType(classifyMessageReceive.getTextClass());
-        inodeAdditionMessage.setFileType(FileTypeEnum.TEXT);
+        inodeAdditionMessage.setFileClassifyType(Collections.singletonList(classifyMessageReceive.getTextClass()));
+        inodeAdditionMessage.setFileType(FileTypeEnum.text);
         //2.2
         inodeAdditionMessageService.save(inodeAdditionMessage);
     }

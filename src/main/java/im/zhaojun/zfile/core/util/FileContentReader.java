@@ -25,9 +25,12 @@ public class FileContentReader {
             // Check if the file type is supported
             if (isSupportedFile(filePath)) {
                 // Read and return file content
-                return readContent(inputStream, filePath);
+                String s = readContent(inputStream, filePath);
+                inputStream.close();
+                return s;
+
             } else {
-                System.out.println("Unsupported file type.");
+
                 return null;
             }
         } catch (IOException e) {

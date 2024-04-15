@@ -19,6 +19,7 @@ import im.zhaojun.zfile.module.storage.service.base.LocalService;
 import im.zhaojun.zfile.module.storage.service.base.MoverService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CountingInputStream;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -26,6 +27,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -221,7 +223,11 @@ public class WebdavServiceImpl extends AbstractProxyTransferService<WebdavParam>
 		//2. 调用localService的写入方法，写入//3. 返回成功失败
 		//InputStream在uploadStream中关闭
 		if (localFileResource != null) {
-			this.uploadFile(uploadFilePathAndName,localFileResource);
+			ByteArrayOutputStream baos =new ByteArrayOutputStream();
+			IOUtils.copy(localFileResource,baos);
+			localFileResource.close();
+			this.uploadFile(uploadFilePathAndName,baos.toByteArray());
+			baos.close();
 			return true;
 		}else{
 			return false;
@@ -248,8 +254,11 @@ public class WebdavServiceImpl extends AbstractProxyTransferService<WebdavParam>
 	}
 
 	@Override
-	public void uploadStream(String unloadFilePathAndName, InputStream inputStream) {
-		//InputStream在uploadFil中关闭
-		this.uploadFile(unloadFilePathAndName,inputStream);
+	public void uploadStream(String unloadFilePathAndName, InputStream inputStream) throws IOException {
+		ByteArrayOutputStream baos =new ByteArrayOutputStream();
+		IOUtils.copy(inputStream,baos);
+		inputStream.close();
+		this.uploadFile(unloadFilePathAndName,baos.toByteArray());
+		baos.close();
 	}
 }

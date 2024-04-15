@@ -176,8 +176,15 @@ public class InodeService {
             inodeLinkQueryWrapper.eq(InodeLink.CHILD_ID_COLUMN_NAME,now);
             InodeLink inodeLink = inodeLinkMapper.selectOne(inodeLinkQueryWrapper);
             if(inodeLink==null){
-                return StringUtils.removeDuplicateSlashes(
+                // 去除末尾的斜杠('/')
+                String result = StringUtils.removeDuplicateSlashes(
                         path.insert(0,ZFileConstant.PATH_SEPARATOR).toString());
+                // 如果末尾有斜杠('/')，则去除之后再返回，否则直接返回
+                if (result.equals("/")) {
+                    return result;
+                } else {
+                    return result.endsWith("/") ? result.substring(0, result.length() - 1) : result;
+                }
             }
             now=inodeLink.getParentId();
         }
@@ -278,5 +285,9 @@ public class InodeService {
                 parentId,id
         ));
         return true;
+    }
+
+    public Inode findById(Long id) {
+        return inodeMapper.selectById(id);
     }
 }

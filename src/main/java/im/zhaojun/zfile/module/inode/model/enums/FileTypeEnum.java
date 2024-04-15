@@ -11,17 +11,17 @@ public enum FileTypeEnum {
     /**
      * 图片
      */
-    IMAGE("Image"),
+    image("image"),
 
     /**
      * 文本
      */
-    TEXT("Text"),
+    text("text"),
 
     /**
      * 其他
      */
-    Other("Other");
+    other("other");
 
 
     @EnumValue

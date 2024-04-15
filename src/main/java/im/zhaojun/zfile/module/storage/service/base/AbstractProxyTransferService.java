@@ -9,6 +9,7 @@ import im.zhaojun.zfile.core.util.StringUtils;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -103,8 +104,10 @@ public abstract class AbstractProxyTransferService<P extends ProxyTransferParam>
 
 	public abstract Long uploadFileWithoutInodeChange(String pathAndName, InputStream inputStream);
 
-	public void uploadFile(String pathAndName, InputStream inputStream){
-		this.uploadFileWithoutInodeChange(pathAndName,inputStream);
+	public void uploadFile(String pathAndName, byte[] bytes) throws IOException {
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+		this.uploadFileWithoutInodeChange(pathAndName,byteArrayInputStream);
+		byteArrayInputStream.close();
 	}
 
 	/**

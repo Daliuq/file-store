@@ -29,6 +29,9 @@ public class InodeItemResult {
 
     @ApiModelProperty(value = "类型", example = "file")
     private FileTypeEnum type;
+
+    @ApiModelProperty(value = "下载地址", example = "http://www.example.com/a.mp4")
+    private String url;
     /**
      * 获取路径和名称的组合, 并移除重复的路径分隔符 /.
      *

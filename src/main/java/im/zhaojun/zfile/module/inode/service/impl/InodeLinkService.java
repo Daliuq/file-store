@@ -1,5 +1,6 @@
 package im.zhaojun.zfile.module.inode.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import im.zhaojun.zfile.module.inode.mapper.InodeLinkMapper;
 import im.zhaojun.zfile.module.inode.model.entity.InodeLink;
 import lombok.extern.slf4j.Slf4j;
@@ -27,4 +28,10 @@ public class InodeLinkService {
         return inodeLink;
     }
 
+    public Long findParentId(Long id) {
+        QueryWrapper<InodeLink> wrapper = new QueryWrapper<>();
+        wrapper.eq(InodeLink.CHILD_ID_COLUMN_NAME, id);
+        InodeLink inodeLink = inodeLinkMapper.selectOne(wrapper);
+        return inodeLink != null ? inodeLink.getParentId() : null;
+    }
 }

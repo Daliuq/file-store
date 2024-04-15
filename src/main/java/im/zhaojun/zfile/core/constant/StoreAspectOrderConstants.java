@@ -19,9 +19,9 @@ public class StoreAspectOrderConstants {
     /**
      * 索引节点操作
      */
-    public static final int INODE_TRACK_ASPECT_ORDER = 5;
+    public static final int INODE_TRACK_ASPECT_ORDER = 6;
 
-    public static final int TEST_CLASSIFY_ASPECT_ORDER = 6;
+    public static final int CLASSIFY_ASPECT_ORDER = 5;
     /**
      * 历史服务操作
      */

@@ -15,7 +15,7 @@ public abstract class AbstractProxyDownloadService<P extends ProxyDownloadParam>
 	 * 空实现.
 	 */
 	@Override
-	public void uploadFile(String pathAndName, InputStream inputStream) {
+	public void uploadFile(String pathAndName, byte[] bytes) {
 	}
 
 }

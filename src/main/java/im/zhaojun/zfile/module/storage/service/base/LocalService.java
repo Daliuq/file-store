@@ -15,7 +15,7 @@ public interface LocalService {
      * @return 成功？
      * @author liuquan
      */
-    void uploadFileStreamToLocal(String unloadFilePathAndName, InputStream inputStream);
+    void uploadFileStreamToLocal(String unloadFilePathAndName, InputStream inputStream) throws IOException;
 
     InputStream getLocalFileResource(String localFilePathAndName) throws IOException;
 }
