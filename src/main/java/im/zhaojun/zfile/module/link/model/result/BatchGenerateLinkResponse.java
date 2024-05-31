@@ -9,11 +9,13 @@ import lombok.Data;
  */
 @Data
 @ApiModel(description = "批量生成直链结果类")
-@AllArgsConstructor
 public class BatchGenerateLinkResponse {
-	
+
 	private String shortLink;
-	
+
 	private String pathLink;
-	
+
+	private String sharePublicKey;
+
+	private String sharePrivateKey;
 }

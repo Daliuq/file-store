@@ -5,6 +5,7 @@ import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.inode.model.entity.Inode;
 import im.zhaojun.zfile.module.inode.service.impl.InodeService;
+import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -48,7 +49,7 @@ public class InodeDeleteAspect {
         String name = (String) args[InodeDeleteAspect.NAME_IN_PARAM];
         //获取存储源id
         Object targetObject = point.getTarget();
-        AbstractProxyTransferService<?> abstractProxyTransferService = (AbstractProxyTransferService<?>) targetObject;
+        AbstractBaseFileService<?> abstractProxyTransferService = (AbstractBaseFileService<?>) targetObject;
         Integer storageId = abstractProxyTransferService.getStorageId();
         Long inodeIdByPath = inodeService.findInodeIdByPath(
                 StringUtils.removeDuplicateSlashes(path + ZFileConstant.PATH_SEPARATOR + name )
@@ -74,7 +75,7 @@ public class InodeDeleteAspect {
         String name = (String) args[InodeDeleteAspect.NAME_IN_PARAM];
         //获取存储源id
         Object targetObject = point.getTarget();
-        AbstractProxyTransferService<?> abstractProxyTransferService = (AbstractProxyTransferService<?>) targetObject;
+        AbstractBaseFileService<?> abstractProxyTransferService = (AbstractBaseFileService<?>) targetObject;
         Integer storageId = abstractProxyTransferService.getStorageId();
         Long inodeIdByPath = inodeService.findInodeIdByPath(
                 StringUtils.removeDuplicateSlashes(path + ZFileConstant.PATH_SEPARATOR + name )

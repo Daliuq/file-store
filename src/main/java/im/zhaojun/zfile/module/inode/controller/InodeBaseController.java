@@ -18,16 +18,16 @@ import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
 import im.zhaojun.zfile.module.storage.model.request.operator.BatchDeleteRequest;
+import im.zhaojun.zfile.module.storage.service.StorageSourceService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.List;
 
 @Api(tags = "文件索引模块")
@@ -51,6 +51,8 @@ public class InodeBaseController {
     private StorageSourceContext storageSourceContext;
     @Resource
     private InodeChain inodeChain;
+    @Resource
+    private StorageSourceService storageSourceService;
     @ApiOperationSupport(order = 1)
     @ApiOperation(value = "通过文件名称获取对于的索引节点，用于查询", notes = "右匹配原则")
     @GetMapping("/name")
@@ -70,12 +72,18 @@ public class InodeBaseController {
     @ApiOperationSupport(order = 2)
     @ApiOperation(value = "用于在非本地代理上传文件服务的上传结束后更新索引节点",notes = "更新索引节点")
     @PostMapping("/insert")
-    public AjaxJson<Boolean> insertInode(InsertInodeRequest insertInodeRequest){
+    public AjaxJson<Boolean> insertInode(@RequestBody InsertInodeRequest insertInodeRequest){
         Inode inode = new Inode();
         inode.setIsDelete(false);
-        inode.setIsDirectory(insertInodeRequest.getIsFolder());
+        inode.setIsDirectory(false);
         inode.setName(insertInodeRequest.getName());
-        inode.setStorageId(inode.getStorageId());
+        inode.setStorageId(storageSourceService.findIdByKey(insertInodeRequest.getStorageKey()));
+        System.out.println(insertInodeRequest);
+        Long parentId = inodeService.findInodeIdByPath(insertInodeRequest.getPath(),
+                inode.getStorageId());//找到父节点的id
+        inode.setOwnUserId(inodeService.findById(parentId).getOwnUserId());
+        inode.setSize(insertInodeRequest.getSize());
+        inode.setTime(new Timestamp(new Date().getTime()));
 
         inodeService.insertWhileBuiltLink(
                 inode,

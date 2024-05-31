@@ -339,4 +339,8 @@ public class StorageSourceContext implements ApplicationContextAware {
         }
         return getByStorageId(storageId);
     }
+
+    public AbstractBaseFileService<?> getUsableStorage(Long addSize){
+        return getByStorageId(storageSourceService.findRandomIDUsable(addSize));
+    }
 }

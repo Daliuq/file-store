@@ -1,8 +1,8 @@
 package im.zhaojun.test;
 import im.zhaojun.zfile.ZfileApplication;
-import im.zhaojun.zfile.module.inode.addition_module.textClassify.messagequeue.consumer.ClassifyReceiveConsumer;
-import im.zhaojun.zfile.module.inode.addition_module.textClassify.messagequeue.producer.TextSendProducer;
-import im.zhaojun.zfile.module.inode.addition_module.textClassify.model.messagequeue.send.ClassifyMessageSend;
+import im.zhaojun.zfile.module.inode.module.classify.textClassify.messagequeue.consumer.ClassifyReceiveConsumer;
+import im.zhaojun.zfile.module.inode.module.classify.textClassify.messagequeue.producer.TextSendProducer;
+import im.zhaojun.zfile.module.inode.module.classify.textClassify.model.messagequeue.send.ClassifyMessageSend;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;

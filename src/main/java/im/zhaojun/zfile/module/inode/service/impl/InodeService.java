@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.MapUtile;
 import im.zhaojun.zfile.core.util.StringUtils;
+import im.zhaojun.zfile.core.util.inode.InodeUtil;
 import im.zhaojun.zfile.module.filter.service.FilterConfigService;
 import im.zhaojun.zfile.module.inode.mapper.InodeLinkMapper;
 import im.zhaojun.zfile.module.inode.mapper.InodeMapper;
@@ -13,8 +14,11 @@ import im.zhaojun.zfile.module.inode.model.entity.Inode;
 import im.zhaojun.zfile.module.inode.model.entity.InodeLink;
 
 import im.zhaojun.zfile.module.inode.model.result.base.InodeItemResult;
+import im.zhaojun.zfile.module.share.model.result.base.ShareFileItemResult;
 import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
+import im.zhaojun.zfile.module.storage.model.enums.FileTypeEnum;
 import im.zhaojun.zfile.module.storage.model.result.FileItemResult;
+import im.zhaojun.zfile.module.storage.service.StorageSourceService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -24,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -31,10 +36,12 @@ import java.util.*;
 public class InodeService {
     @Resource
     InodeMapper inodeMapper;
-
+    @Resource
+    private InodeUtil inodeUtil;
     @Resource
     InodeLinkMapper inodeLinkMapper;
-
+    @Resource
+    StorageSourceService storageSourceService;
     @Resource
     FilterConfigService filterConfigService;
 
@@ -113,6 +120,7 @@ public class InodeService {
         inodeQueryWrapper.clear();
         inodeQueryWrapper.eq(Inode.STORAGE_ID_COLUMN_NAME,storeId)
                 .eq(Inode.IS_DELETE_COLUMN_NAME,false);
+        //TODO 考虑到换源存储，这样的化要改
         //只搬这个存储源下全部索引，把数据库的东西搬上了
         List<Inode> inodes = inodeMapper.selectList(inodeQueryWrapper);
         HashMap<Long, Inode> inodeHashMap = MapUtile.<Long, Inode>changeListToMapWithId(inodes);
@@ -156,7 +164,7 @@ public class InodeService {
      * @param id
      * @return
      */
-    public String findInodePathById(Long id){
+    public String findInodePathAndNameById(Long id){
         QueryWrapper<InodeLink> inodeLinkQueryWrapper = new QueryWrapper<>();
         Long now=id;
         StringBuilder path=new StringBuilder();
@@ -246,7 +254,7 @@ public class InodeService {
         List<InodeItemResult> inodeItemResults=new ArrayList<>();
         for(Inode inode:inodes){
             //2获取这些id的全部路径
-            String inodePathById = findInodePathById(inode.getId());
+            String inodePathById = findInodePathAndNameById(inode.getId());
 
             //3校验这些路径的过滤器
             if(filterConfigService.checkFileIsInaccessible(inode.getStorageId(),inodePathById)
@@ -266,6 +274,7 @@ public class InodeService {
             inodeItemResult.setTime(fileItem.getTime());
             inodeItemResult.setType(fileItem.getType());
             inodeItemResult.setStorageId(inode.getStorageId());
+            inodeItemResult.setStorageKey(storageSourceService.findStorageKeyById(inode.getStorageId()));
 
             inodeItemResults.add(inodeItemResult);
 
@@ -289,5 +298,150 @@ public class InodeService {
 
     public Inode findById(Long id) {
         return inodeMapper.selectById(id);
+    }
+
+    public List<Inode> findChildrenById(Long id){
+        QueryWrapper<InodeLink> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq(InodeLink.PARENT_ID_COLUMN_NAME,id);
+        List<InodeLink> inodeLinks = inodeLinkMapper.selectList(queryWrapper);
+        List<Inode> inodes=new ArrayList<>();
+        for(InodeLink inodeLink:inodeLinks){
+            Inode inode = inodeMapper.selectById(inodeLink.getChildId());
+            if (!inode.getIsDelete())
+                inodes.add(inode);
+        }
+        return inodes;
+    }
+
+    public List<Long> findOwnUserIdInodeId(Long userId){
+        QueryWrapper<Inode> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq(Inode.OWN_USER_ID_COLUMN_NAME,userId);
+        List<Inode> inodeLinks = inodeMapper.selectList(queryWrapper);
+        return inodeLinks.stream().map(Inode::getId).collect(Collectors.toList());
+    }
+
+    public Long getUserTotallySize(Long userId) {
+        QueryWrapper<Inode> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(Inode.OWN_USER_ID_COLUMN_NAME, userId).eq(Inode.IS_DELETE_COLUMN_NAME,false);; // 设置查询条件，own_user_id等于给定userId
+
+        List<Inode> inodes = inodeMapper.selectList(queryWrapper); // 执行查询，获取符合条件的记录列表
+
+        Long totalSize = 0L; // 初始化累加值为0
+
+        for (Inode inode : inodes) {
+            if(!ObjectUtil.isNull(inode.getSize()))
+                totalSize += inode.getSize(); // 将每条记录的size值累加到totalSize中
+        }
+
+        return totalSize; // 返回累加值
+    }
+
+    public Long getStorageSourceTotallySize(Integer storageId) {
+        QueryWrapper<Inode> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(Inode.STORAGE_ID_COLUMN_NAME,storageId).eq(Inode.IS_DELETE_COLUMN_NAME,false);
+        List<Inode> inodes = inodeMapper.selectList(queryWrapper); // 执行查询，获取符合条件的记录列表
+
+        Long totalSize = 0L; // 初始化累加值为0
+
+        for (Inode inode : inodes) {
+            if(!ObjectUtil.isNull(inode.getSize()))
+                totalSize += inode.getSize(); // 将每条记录的size值累加到totalSize中
+        }
+
+        return totalSize;
+    }
+
+    public Long findStorageSourceNowTotalSize(Integer id) {
+        QueryWrapper<Inode> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq(Inode.STORAGE_ID_COLUMN_NAME,id);
+        return inodeMapper.selectCount(queryWrapper);
+    }
+
+    public Boolean isChild(Long childId, Long parentId) {
+        Queue<Long> queue=new LinkedList<>();
+        queue.add(childId);
+        while(!queue.isEmpty()){
+            //删除当前节点
+            Long nowId=queue.remove();
+            System.out.println(nowId.longValue());
+            System.out.println(parentId.longValue());
+            System.out.println(nowId.longValue() == parentId.longValue());
+            //判断当前节点是否等于parentId
+            if(nowId.longValue()==parentId.longValue()){
+                return true;
+            }
+            //父节点加入队列
+            QueryWrapper<InodeLink> inodeLinkQueryWrapper = new QueryWrapper<>();
+            inodeLinkQueryWrapper.eq(InodeLink.CHILD_ID_COLUMN_NAME,nowId);
+            InodeLink inodeLink = inodeLinkMapper.selectOne(inodeLinkQueryWrapper);
+
+            if(ObjectUtil.isNotNull(inodeLink)){
+                queue.add(inodeLink.getParentId());
+            }
+
+        }
+//        没找到
+        return false;
+    }
+
+    public List<FileItemResult> getInodeChildrenAsFileItemResults(Long inodeIdByPath) {
+        List<Inode> childrenById = findChildrenById(inodeIdByPath);
+        List<FileItemResult> fileItemResults=new ArrayList<>();
+        for(Inode inode:childrenById){
+            FileItemResult fileItemResult = new FileItemResult();
+            fileItemResult.setName(inode.getName());
+            String pathAndName = findInodePathAndNameById(inode.getId());
+            String path = pathAndName.replaceAll("/[^/]+$", "").isEmpty() ? "/" : pathAndName.replaceAll("/[^/]+$", "");;
+            fileItemResult.setPath(path);
+            fileItemResult.setSize(inode.getSize());
+            fileItemResult.setTime(inode.getTime());
+            fileItemResult.setType(inode.getIsDirectory()? FileTypeEnum.FOLDER:FileTypeEnum.FILE);
+            fileItemResult.setUrl(inodeUtil.getUrl(inode.getId()));
+            fileItemResults.add(fileItemResult);
+        }
+        return fileItemResults;
+    }
+
+    public List<FileItemResult> getByIdListAsFileItemResult(List<Long> inodeIds) {
+        List<FileItemResult> fileItemResults=new ArrayList<>();
+        for(Long id:inodeIds){
+            Inode inode = inodeMapper.selectById(id);
+            FileItemResult fileItemResult = new FileItemResult();
+            fileItemResult.setName(inode.getName());
+            String pathAndName = findInodePathAndNameById(inode.getId());
+            String path = pathAndName.replaceAll("/[^/]+$", "").isEmpty() ? "/" : pathAndName.replaceAll("/[^/]+$", "");;
+            fileItemResult.setPath(path);
+            fileItemResult.setSize(inode.getSize());
+            fileItemResult.setTime(inode.getTime());
+            fileItemResult.setType(inode.getIsDirectory()? FileTypeEnum.FOLDER:FileTypeEnum.FILE);
+            fileItemResult.setUrl(inodeUtil.getUrl(inode.getId()));
+            fileItemResults.add(fileItemResult);
+        }
+        return fileItemResults;
+    }
+
+
+    public List<ShareFileItemResult> getByIdListWhenGetBaseShareItemResult(List<Long> inodeIds) {
+        List<ShareFileItemResult> fileItemResults=new ArrayList<>();
+        for(Long id:inodeIds){
+            Inode inode = inodeMapper.selectById(id);
+            ShareFileItemResult fileItemResult = new ShareFileItemResult();
+            fileItemResult.setName(inode.getName());
+            String pathAndName = findInodePathAndNameById(inode.getId());
+            String path = pathAndName.replaceAll("/[^/]+$", "").isEmpty() ? "/" : pathAndName.replaceAll("/[^/]+$", "");;
+            fileItemResult.setPath(path);
+            fileItemResult.setSize(inode.getSize());
+            fileItemResult.setTime(inode.getTime());
+            fileItemResult.setType(inode.getIsDirectory()? FileTypeEnum.FOLDER:FileTypeEnum.FILE);
+            fileItemResult.setUrl(inodeUtil.getUrl(inode.getId()));
+            fileItemResult.setBaseSharePath(findInodePathAndNameById(id));
+            fileItemResult.setBaseShareStorageKey(storageSourceService.findStorageKeyById(inode.getStorageId()));
+            fileItemResults.add(fileItemResult);
+        }
+        return fileItemResults;
+    }
+
+    public boolean isDelete(Long id) {
+        return inodeMapper.selectById(id).getIsDelete();
     }
 }

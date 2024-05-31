@@ -105,7 +105,8 @@ public class StorageSourceSupport {
             }
 
             // 如果 type 为 select, 则获取 options 下拉列表.
-            List<StorageSourceParamDef.Options> optionsList = getOptionsList(storageParamItemAnnotation, storageParam);
+            List<StorageSourceParamDef.Options> optionsList =
+                    getOptionsList(storageParamItemAnnotation, storageParam);
 
             StorageSourceParamDef storageSourceParamDef = StorageSourceParamDef.builder().
                     key(key).
@@ -143,7 +144,8 @@ public class StorageSourceSupport {
      *
      * @return  options 列表，如果没有则返回空列表，不会返回 null
      */
-    private static List<StorageSourceParamDef.Options> getOptionsList(StorageParamItem storageParamItemAnnotation, IStorageParam storageParam) {
+    private static List<StorageSourceParamDef.Options> getOptionsList(
+            StorageParamItem storageParamItemAnnotation, IStorageParam storageParam) {
         // 如果不是默认的空接口实现，优先从实现类中通过反射获取 options 列表
         Class<? extends StorageParamSelect> storageParamSelectClass = storageParamItemAnnotation.optionsClass();
         if (BooleanUtil.isFalse(storageParamSelectClass.isInterface())) {

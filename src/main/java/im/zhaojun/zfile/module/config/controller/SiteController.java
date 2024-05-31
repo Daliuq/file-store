@@ -4,7 +4,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.github.xiaoymin.knife4j.annotations.ApiSort;
 import im.zhaojun.zfile.module.storage.service.StorageSourceService;
 import im.zhaojun.zfile.module.config.service.SystemConfigService;
-import im.zhaojun.zfile.core.config.ZFileProperties;
+import im.zhaojun.zfile.core.config.FileProperties;
 import im.zhaojun.zfile.core.util.AjaxJson;
 import im.zhaojun.zfile.module.config.model.dto.SystemConfigDTO;
 import im.zhaojun.zfile.module.storage.model.request.base.FileListConfigRequest;
@@ -37,7 +37,7 @@ import javax.validation.Valid;
 public class SiteController {
 
 	@Resource
-	private ZFileProperties zFileProperties;
+	private FileProperties fileProperties;
 
 	@Resource
 	private StorageSourceService storageSourceService;
@@ -54,7 +54,7 @@ public class SiteController {
 		SiteConfigResult siteConfigResult = new SiteConfigResult();
 		BeanUtils.copyProperties(systemConfig, siteConfigResult);
 
-		siteConfigResult.setDebugMode(zFileProperties.isDebug());
+		siteConfigResult.setDebugMode(fileProperties.isDebug());
 		return AjaxJson.getSuccessData(siteConfigResult);
 	}
 

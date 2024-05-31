@@ -25,7 +25,9 @@ public class HuaweiServiceImpl extends AbstractS3BaseFileService<HuaweiParam> {
         BasicAWSCredentials credentials = new BasicAWSCredentials(param.getAccessKey(), param.getSecretKey());
         s3Client = AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(param.getEndPoint(), "obs")).build();
+                .withEndpointConfiguration(new AwsClientBuilder
+                        .EndpointConfiguration(param.getEndPoint(), "obs"))
+                .build();
 
         setUploadCors();
     }

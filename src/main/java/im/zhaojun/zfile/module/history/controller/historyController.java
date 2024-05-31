@@ -60,12 +60,12 @@ public class historyController {
             throw new RuntimeException("空文件不能为空");
         }
         // 获取上传路径
-        String filePath = SpringMvcUtils.getExtractPathWithinPattern();
-
-
+        String filePath  = SpringMvcUtils.getExtractPathWithinPattern();
+        filePath = filePath.replaceFirst("/([^/]+)$", ".$1");
 
         AbstractBaseFileService<?> storageServiceByKey =
                 storageSourceContext.getByStorageKey(storageKey);
+        System.out.println(storageKey);
         Integer storageId = storageServiceByKey.getStorageId();
         //4现在手上有存储元id和path和name，获取索引id,由于索引是文件更新后更新的，所有也要等待执行后获取
         Long inodeId = inodeService.findInodeIdByPath(

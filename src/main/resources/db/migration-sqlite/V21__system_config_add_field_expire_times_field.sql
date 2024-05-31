@@ -1,1 +1,0 @@
-INSERT INTO system_config (`name`, `title`, `value`) VALUES ('linkExpireTimes', '短链过期时间设置', '[{ "value": 1, "unit": "d", "seconds": 86400 }]');

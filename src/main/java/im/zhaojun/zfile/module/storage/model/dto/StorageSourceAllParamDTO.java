@@ -13,6 +13,8 @@ import lombok.Data;
 @Data
 @ApiModel(description = "存储源所有拓展参数")
 public class StorageSourceAllParamDTO {
+    @ApiModelProperty(value = "存储源容量", example = "1000000")
+    private Long size;
 
     @ApiModelProperty(value = "Endpoint 接入点", example = "oss-cn-beijing.aliyuncs.com")
     private String endPoint;

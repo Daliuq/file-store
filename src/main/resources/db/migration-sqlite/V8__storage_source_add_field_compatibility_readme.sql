@@ -1,1 +1,0 @@
-alter table storage_source add compatibility_readme bit;

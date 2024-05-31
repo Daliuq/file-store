@@ -18,6 +18,9 @@ public class InodeItemResult {
 
     @ApiModelProperty(value = "所在存储源id", example = "/home/")
     private Integer storageId;
+
+    @ApiModelProperty(value = "所在存储源id", example = "/home/")
+    private String storageKey;
     @ApiModelProperty(value = "文件名", example = "a.mp4")
     private String name;
 

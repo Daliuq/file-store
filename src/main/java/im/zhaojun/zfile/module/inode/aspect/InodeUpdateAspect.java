@@ -5,6 +5,7 @@ import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.inode.model.entity.Inode;
 import im.zhaojun.zfile.module.inode.service.impl.InodeService;
+import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -46,8 +47,8 @@ public class InodeUpdateAspect {
         String newName = (String) args[InodeUpdateAspect.NEW_NAME_IN_PARAM];
         //获取StorageId
         Object targetObject = point.getTarget();
-        AbstractProxyTransferService<?> abstractProxyTransferService =
-                (AbstractProxyTransferService<?>) targetObject;
+        AbstractBaseFileService<?> abstractProxyTransferService =
+                (AbstractBaseFileService<?>) targetObject;
         Integer storageId = abstractProxyTransferService.getStorageId();
         //运行方法
         result = point.proceed();

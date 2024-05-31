@@ -5,10 +5,12 @@ import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import im.zhaojun.zfile.core.exception.StorageSourceException;
+import im.zhaojun.zfile.core.exception.StorageSpaceInsufficientException;
 import im.zhaojun.zfile.core.exception.file.InvalidStorageSourceException;
 import im.zhaojun.zfile.core.util.CodeMsg;
 import im.zhaojun.zfile.module.filter.model.entity.FilterConfig;
 import im.zhaojun.zfile.module.filter.service.FilterConfigService;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.link.service.ShortLinkService;
 import im.zhaojun.zfile.module.log.service.DownloadLogService;
 import im.zhaojun.zfile.module.password.model.dto.VerifyResultDTO;
@@ -40,11 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.function.LongFunction;
+import java.util.*;
 
 /**
  * 存储源基本信息 Service
@@ -523,5 +521,32 @@ public class StorageSourceService {
         //不用clear
         queryWrapper.last("limit 1 offset "+offset);
         return storageSourceConfigMapper.selectOne(queryWrapper).getStorageId();
+    }
+
+    @Resource
+    InodeService inodeService;
+    public Integer findRandomIDUsable(Long addSize){
+        //1.查询每个存储源
+        List<StorageSource> allOrderByOrderNum = storageSourceMapper.findAllOrderByOrderNum();
+        List<StorageSource> usableStorageSourceList = new ArrayList<>();
+        for(StorageSource storageSource :allOrderByOrderNum){
+            Integer id = storageSource.getId();
+            Long storageSourceNowTotalSize = inodeService.findStorageSourceNowTotalSize(id);
+            QueryWrapper<StorageSourceConfig> queryWrapper=new QueryWrapper<>();
+            queryWrapper.eq(StorageSourceConfig.NAME_COLUMN_NAME,"size");
+            if(storageSourceNowTotalSize <= addSize+ Long.parseLong(storageSourceConfigMapper.selectOne(queryWrapper).getValue())){
+                usableStorageSourceList.add(storageSource);
+            }
+        }
+        // 如果没有可用的存储源，返回 null 或者抛出异常，这里假设返回 null
+        if (usableStorageSourceList.isEmpty()) {
+            throw new StorageSpaceInsufficientException("存储空间不足");
+        }
+
+        // 生成一个随机索引，从可用的存储源列表中选择一个元素
+        Random random = new Random();
+        int randomIndex = random.nextInt(usableStorageSourceList.size());
+        StorageSource randomStorageSource = usableStorageSourceList.get(randomIndex);
+        return randomStorageSource.getId();
     }
 }

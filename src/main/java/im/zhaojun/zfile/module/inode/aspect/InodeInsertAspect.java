@@ -1,5 +1,6 @@
 package im.zhaojun.zfile.module.inode.aspect;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import im.zhaojun.zfile.core.constant.StoreAspectOrderConstants;
@@ -10,7 +11,10 @@ import im.zhaojun.zfile.module.inode.model.entity.Inode;
 import im.zhaojun.zfile.module.inode.model.entity.InodeLink;
 import im.zhaojun.zfile.module.inode.service.impl.InodeLinkService;
 import im.zhaojun.zfile.module.inode.service.impl.InodeService;
+import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import im.zhaojun.zfile.module.storage.service.base.AbstractProxyTransferService;
+
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -19,6 +23,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
 /***
@@ -42,8 +48,8 @@ public class InodeInsertAspect {
 
     private static int PATH_AND_NAME_IN_PARAM = 0;
     private static int PATH_IN_PARAM = 0;
+    private static int FILE_IN_PARAM = 1;
     private static int NAME_IN_PARAM = 1;
-
     /**
      * 切入文件更新，同步更新索引节点upload
      * @param point
@@ -59,9 +65,11 @@ public class InodeInsertAspect {
         Object result = null;
         String pathSeparator = ZFileConstant.PATH_SEPARATOR;
         String pathAndName = (String) args[InodeInsertAspect.PATH_AND_NAME_IN_PARAM];
+        Long size  = (long) ((byte[]) args[InodeInsertAspect.FILE_IN_PARAM]).length;
+
         // 使用 split 方法拆分路径与名称
         String[] parts = pathAndName.split(pathSeparator);
-        String path;
+        String path = pathAndName.replaceAll("/[^/]+$", "").isEmpty() ? "/" : pathAndName.replaceAll("/[^/]+$", "");;
         String name;
         // 检查分割后的数组是否包含路径和名称
         if (parts.length > 1) {
@@ -73,8 +81,8 @@ public class InodeInsertAspect {
         }
         //获取StorageId
         Object targetObject = point.getTarget();
-        AbstractProxyTransferService<?> abstractProxyTransferService =
-                (AbstractProxyTransferService<?>) targetObject;
+        AbstractBaseFileService<?> abstractProxyTransferService =
+                (AbstractBaseFileService<?>) targetObject;
         Integer storageId = abstractProxyTransferService.getStorageId();
 
         Long parentId = inodeService.findInodeIdByPath(path, storageId);
@@ -89,6 +97,11 @@ public class InodeInsertAspect {
         inode.setIsHistoricalVersionService(false);
         inode.setStorageId(storageId);
         inode.setIsDirectory(false);
+        inode.setOwnUserId(
+            inodeService.findById(parentId).getOwnUserId());
+        inode.setSize(size);
+        inode.setTime(Timestamp.valueOf(LocalDateTime.now()));
+        inode.setOwnUserId(inodeService.findById(parentId).getOwnUserId());
         if(ObjectUtil.isNull(inodeService.findInodeIdByPath(pathAndName, storageId))){
             //在上传文件时新增一条文件id
             Long childId = inodeService.insert(inode).getId();
@@ -136,7 +149,7 @@ public class InodeInsertAspect {
         // 检查分割后的数组是否包含路径和名称
         //获取StorageId
         Object targetObject = point.getTarget();
-        AbstractProxyTransferService<?> abstractProxyTransferService = (AbstractProxyTransferService<?>) targetObject;
+        AbstractBaseFileService<?> abstractProxyTransferService = (AbstractBaseFileService<?>) targetObject;
         Integer storageId = abstractProxyTransferService.getStorageId();
 
         Long parentId = inodeService.findInodeIdByPath(path, storageId);
@@ -151,6 +164,7 @@ public class InodeInsertAspect {
         inode.setIsHistoricalVersionService(false);
         inode.setStorageId(storageId);
         inode.setIsDirectory(true);
+        inode.setOwnUserId(inodeService.findById(parentId).getOwnUserId());
         if(ObjectUtil.isNull(
                 inodeService.findInodeIdByPath(
                         StringUtils.removeDuplicateSlashes(
@@ -159,6 +173,7 @@ public class InodeInsertAspect {
                         ), storageId))){
             //在上传文件时新增一条文件id
             Long childId = inodeService.insert(inode).getId();
+
             inodeLinkService.insert(new InodeLink(parentId,childId));
         }
         return result;

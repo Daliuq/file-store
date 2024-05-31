@@ -20,7 +20,7 @@ public class InsertInodeRequest {
     @NotBlank(message = "上传的文件名不能为空")
     private String name;
 
-    @ApiModelProperty(value = "是文件夹还是", example = "false")
-    @NotBlank(message = "是否是文件夹不能为空")
-    private Boolean isFolder;
+    @ApiModelProperty(value = "文件大小",example = "10")
+    @NotBlank(message = "传送文件大小")
+    private Long size;
 }

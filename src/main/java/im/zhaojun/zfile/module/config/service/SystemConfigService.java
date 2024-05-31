@@ -9,7 +9,7 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import im.zhaojun.zfile.core.config.ZFileProperties;
+import im.zhaojun.zfile.core.config.FileProperties;
 import im.zhaojun.zfile.core.exception.ServiceException;
 import im.zhaojun.zfile.core.util.CodeMsg;
 import im.zhaojun.zfile.core.util.EnumConvertUtils;
@@ -46,9 +46,9 @@ import static im.zhaojun.zfile.module.config.service.SystemConfigService.CACHE_N
 @Service
 @CacheConfig(cacheNames = CACHE_NAME)
 public class SystemConfigService {
-    
+
     public static final String CACHE_NAME = "systemConfig";
-    
+
     private static final String DEFAULT_USERNAME = "admin";
 
     private static final String DEFAULT_PASSWORD = "123456";
@@ -57,22 +57,22 @@ public class SystemConfigService {
 
     @Resource
     private SystemConfigMapper systemConfigMapper;
-    
+
     @Resource
     private SystemConfigService systemConfigService;
-    
+
     @Resource
-    private ZFileProperties zFileProperties;
-    
+    private FileProperties fileProperties;
+
     @Resource
     private CacheManager cacheManager;
 
     @Resource
     private ISystemConfigModifyHandler systemConfigModifyHandler;
-    
+
     private final Class<SystemConfigDTO> systemConfigClazz = SystemConfigDTO.class;
 
-    
+
     /**
      * 获取系统设置, 如果缓存中有, 则去缓存取, 没有则查询数据库并写入到缓存中.
      *
@@ -173,11 +173,11 @@ public class SystemConfigService {
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(allEntries = true)
     public void resetAdminLoginInfo() {
-        if (!zFileProperties.isDebug()) {
+        if (!fileProperties.isDebug()) {
             log.warn("当前为非调试模式, 无法重置管理员登录信息");
             throw new ServiceException(CodeMsg.BAD_REQUEST);
         }
-        
+
         SystemConfig usernameConfig = systemConfigMapper.findByName(SystemConfigConstant.USERNAME);
         usernameConfig.setValue(DEFAULT_USERNAME);
         systemConfigMapper.updateById(usernameConfig);
@@ -190,11 +190,11 @@ public class SystemConfigService {
         SystemConfig loginVerifyModeConfig = systemConfigMapper.findByName(SystemConfigConstant.LOGIN_VERIFY_MODE);
         loginVerifyModeConfig.setValue(DEFAULT_LOGIN_VERIFY_MODE.getValue());
         systemConfigMapper.updateById(loginVerifyModeConfig);
-    
+
         log.info("重置管理员登录信息成功, 账号: {}, 密码: {}, 登录校验方式: {}", DEFAULT_USERNAME, DEFAULT_PASSWORD, DEFAULT_LOGIN_VERIFY_MODE);
     }
 
-    
+
     /**
      * 获取 RSA Hex 格式密钥
      *
@@ -206,19 +206,19 @@ public class SystemConfigService {
         if (StrUtil.isEmpty(rsaHexKey)) {
             byte[] key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded();
             rsaHexKey = HexUtil.encodeHexStr(key);
-            
+
             SystemConfig loginVerifyModeConfig = systemConfigMapper.findByName(SystemConfigConstant.RSA_HEX_KEY);
             loginVerifyModeConfig.setValue(rsaHexKey);
             systemConfigMapper.updateById(loginVerifyModeConfig);
             systemConfigDTO.setRsaHexKey(rsaHexKey);
-            
+
             Cache cache = cacheManager.getCache(CACHE_NAME);
             Optional.ofNullable(cache).ifPresent(cache1 -> cache1.put("dto", systemConfigDTO));
         }
         return rsaHexKey;
     }
-    
-    
+
+
     /**
      * 获取系统是否已初始化
      *
@@ -227,8 +227,8 @@ public class SystemConfigService {
     public Boolean getSystemIsInstalled() {
         return systemConfigService.getSystemConfig().getInstalled();
     }
-    
-    
+
+
     /**
      * 获取后端站点域名
      *
@@ -238,8 +238,8 @@ public class SystemConfigService {
         SystemConfigDTO systemConfigDTO = systemConfigService.getSystemConfig();
         return systemConfigDTO.getDomain();
     }
-    
-    
+
+
     /**
      * 获取前端站点域名
      *
@@ -249,8 +249,8 @@ public class SystemConfigService {
         SystemConfigDTO systemConfigDTO = systemConfigService.getSystemConfig();
         return systemConfigDTO.getFrontDomain();
     }
-    
-    
+
+
     /**
      * 获取实际的前端站点域名
      *
@@ -260,8 +260,8 @@ public class SystemConfigService {
         SystemConfigDTO systemConfigDTO = systemConfigService.getSystemConfig();
         return StrUtil.firstNonNull(systemConfigDTO.getFrontDomain(), systemConfigDTO.getDomain());
     }
-    
-    
+
+
     /**
      * 获取前端地址下的 403 页面地址.
      *

@@ -1,5 +1,6 @@
 package im.zhaojun.zfile.module.link.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.BooleanUtil;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.github.xiaoymin.knife4j.annotations.ApiSort;
@@ -8,12 +9,17 @@ import im.zhaojun.zfile.core.util.AjaxJson;
 import im.zhaojun.zfile.core.util.StringUtils;
 import im.zhaojun.zfile.module.config.model.dto.SystemConfigDTO;
 import im.zhaojun.zfile.module.config.service.SystemConfigService;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.link.model.entity.ShortLink;
 import im.zhaojun.zfile.module.link.model.request.BatchGenerateLinkRequest;
 import im.zhaojun.zfile.module.link.model.result.BatchGenerateLinkResponse;
 import im.zhaojun.zfile.module.link.service.LinkDownloadService;
 import im.zhaojun.zfile.module.link.service.ShortLinkService;
+import im.zhaojun.zfile.module.share.model.entity.ShareLink;
+import im.zhaojun.zfile.module.share.service.ShareLinkService;
+import im.zhaojun.zfile.module.storage.context.StorageSourceContext;
 import im.zhaojun.zfile.module.storage.service.StorageSourceService;
+import im.zhaojun.zfile.module.storage.service.base.AbstractBaseFileService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
@@ -51,6 +57,11 @@ public class ShortLinkController {
     @Resource
     private LinkDownloadService linkDownloadService;
 
+    @Resource
+    private InodeService inodeService;
+
+    @Resource
+    private ShareLinkService shareLinkService;
     @PostMapping("/api/short-link/batch/generate")
     @ResponseBody
     @ApiOperationSupport(order = 1)
@@ -61,7 +72,7 @@ public class ShortLinkController {
         // 获取站点域名
         SystemConfigDTO systemConfig = systemConfigService.getSystemConfig();
 
-        // 是否允许使用短链和短链，如果都不允许，则提示禁止生成.
+        //1. 是否允许使用短链和短链，如果都不允许，则提示禁止生成.
         Boolean showShortLink = systemConfig.getShowShortLink();
         Boolean showPathLink = systemConfig.getShowPathLink();
         if ( BooleanUtil.isFalse(showShortLink) && BooleanUtil.isFalse(showPathLink)) {
@@ -79,8 +90,22 @@ public class ShortLinkController {
             ShortLink shortLink = shortLinkService.generatorShortLink(storageId, fullPath, expireTime);
             String shortUrl = StringUtils.removeDuplicateSlashes(domain + "/s/" + shortLink.getShortKey());
             String pathLink = StringUtils.generatorPathLink(storageKey, fullPath);
-            result.add(new BatchGenerateLinkResponse(shortUrl, pathLink));
+
+//            //添加上生成shareLink的
+//
+//            Long inodeId = inodeService.findInodeIdByPath(path, storageId);
+//            ShareLink shareLink = shareLinkService.generatorShareLink(inodeId, StpUtil.getLoginIdAsLong(), expireTime);
+//            String sharePrivateKey = shareLink.getSharePrivateKey();
+//            String sharePublicKey = shareLink.getSharePublicKey();
+            BatchGenerateLinkResponse batchGenerateLinkResponse = new BatchGenerateLinkResponse();
+
+            batchGenerateLinkResponse.setShortLink(shortUrl);
+            batchGenerateLinkResponse.setPathLink(pathLink);
+//            batchGenerateLinkResponse.setSharePrivateKey(sharePrivateKey);
+//            batchGenerateLinkResponse.setSharePublicKey(sharePublicKey);
+            result.add(batchGenerateLinkResponse);
         }
+
         return AjaxJson.getSuccessData(result);
     }
 

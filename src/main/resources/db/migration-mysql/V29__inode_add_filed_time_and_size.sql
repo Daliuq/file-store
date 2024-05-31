@@ -1,0 +1,4 @@
+ALTER TABLE inode
+    ADD COLUMN size BIGINT COMMENT '大小';
+ALTER TABLE inode
+    ADD COLUMN `time` DATETIME COMMENT '时间';

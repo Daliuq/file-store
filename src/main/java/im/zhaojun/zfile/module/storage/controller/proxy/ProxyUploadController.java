@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.beans.Beans;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * 服务端代理上传 Controller
@@ -52,8 +53,9 @@ public class ProxyUploadController {
 		// 进行上传.
 		AbstractProxyTransferService<?> proxyUploadService = (AbstractProxyTransferService<?>) storageServiceByKey;
 		ByteArrayOutputStream baos =new ByteArrayOutputStream();
-		IOUtils.copy(file.getInputStream(),baos);
-		file.getInputStream().close();
+		InputStream inputStream = file.getInputStream();
+		IOUtils.copy(inputStream,baos);
+		inputStream.close();
 		proxyUploadService.uploadFile(filePath, baos.toByteArray());
 		baos.close();
 		return AjaxJson.getSuccess();

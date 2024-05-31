@@ -1,6 +1,6 @@
 package im.zhaojun.zfile.core.util;
 
-import im.zhaojun.zfile.module.inode.addition_module.textClassify.model.enums.ReadAble;
+import im.zhaojun.zfile.module.inode.module.classify.textClassify.model.enums.ReadAble;
 
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
@@ -26,7 +26,6 @@ public class FileContentReader {
             if (isSupportedFile(filePath)) {
                 // Read and return file content
                 String s = readContent(inputStream, filePath);
-                inputStream.close();
                 return s;
 
             } else {

@@ -63,7 +63,8 @@ public abstract class AbstractS3BaseFileService<P extends S3BaseParam> extends A
 
         Date expirationDate = new Date(System.currentTimeMillis() + tokenTime * 1000);
 
-        GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, fullPath, HttpMethod.GET);
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucketName, fullPath, HttpMethod.GET);
         generatePresignedUrlRequest.setExpiration(expirationDate);
         URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
 
@@ -200,10 +201,11 @@ public abstract class AbstractS3BaseFileService<P extends S3BaseParam> extends A
     public String getUploadUrl(String path, String name, Long size) {
         String bucketName = param.getBucketName();
         String uploadToPath = StringUtils.concat(param.getBasePath(), path, name);
-        uploadToPath = StringUtils.trimStartSlashes(uploadToPath);
-
+        System.out.println(uploadToPath);
+        Date expirationDate = new Date(System.currentTimeMillis() + 100000);
         GeneratePresignedUrlRequest req =
                 new GeneratePresignedUrlRequest(bucketName, uploadToPath, HttpMethod.PUT);
+        req.setExpiration(expirationDate);
         URL url = s3Client.generatePresignedUrl(req);
 
         return url.toExternalForm();

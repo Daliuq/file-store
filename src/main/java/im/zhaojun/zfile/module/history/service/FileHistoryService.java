@@ -58,7 +58,7 @@ public class FileHistoryService {
         //2.1获取当前文件所在服务
         AbstractBaseFileService<IStorageParam> abstractBaseFileService =
                 storageSourceContext.getByStorageId(storageId);
-        String path = inodeService.findInodePathById(inodeId);
+        String path = inodeService.findInodePathAndNameById(inodeId);
         String downloadUrl = abstractBaseFileService.getDownloadUrl(path);
         //2.2获取一个历史服务
         AbstractProxyTransferService<?> randomByStorageConfig = (AbstractProxyTransferService<?>) storageSourceContext.getRandomByStorageConfig(
@@ -102,11 +102,13 @@ public class FileHistoryService {
     }
 
     public FileHistory selectOneByInodeId(Long inodeId) {
-        QueryWrapper<FileHistory> queryWrapper=new QueryWrapper<>();
-        queryWrapper.eq(FileHistory.INODE_ID_COLUMN_NAME,inodeId);
+        QueryWrapper<FileHistory> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq(FileHistory.INODE_ID_COLUMN_NAME, inodeId);
         queryWrapper.last("limit 1");
-        return fileHistoryMapper.selectList(queryWrapper).get(0);
+        List<FileHistory> resultList = fileHistoryMapper.selectList(queryWrapper);
+        return resultList.isEmpty() ? null : resultList.get(0);
     }
+
 
     public List<FileHistory> selectByInodeId(Long inodeId) {
         QueryWrapper<FileHistory> queryWrapper=new QueryWrapper<>();

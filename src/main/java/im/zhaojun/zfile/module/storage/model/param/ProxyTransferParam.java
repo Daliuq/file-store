@@ -12,8 +12,10 @@ import lombok.Getter;
 @Getter
 public class ProxyTransferParam extends BaseParam{
 
-	@StorageParamItem(name = "历史服务存储源", order = 10000000,type = StorageParamTypeEnum.SWITCH,
-			defaultValue = "true",description = "作为历史服务存储源",ignoreInput = false)
+	@StorageParamItem(name = "历史服务存储源",
+			order = 10000000,
+			type = StorageParamTypeEnum.SWITCH,
+			defaultValue = "true",description = "是否作为历史服务存储源",ignoreInput = false)
 	private boolean history;
 
 
@@ -29,7 +31,9 @@ public class ProxyTransferParam extends BaseParam{
 	private boolean isPrivate;
 
 	@StorageParamItem(name = "下载签名有效期",
-			required = false, defaultValue = "1800", description = "用于下载签名的有效期, 单位为秒, 如不配置则默认为 1800 秒.")
+			required = false,
+			defaultValue = "1800",
+			description = "用于下载签名的有效期, 单位为秒, 如不配置则默认为 1800 秒.")
 	private Integer tokenTime;
 
 }

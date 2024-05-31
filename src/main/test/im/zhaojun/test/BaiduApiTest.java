@@ -4,7 +4,6 @@ import im.zhaojun.zfile.ZfileApplication;
 import im.zhaojun.zfile.api.baidu.image.UniversalObjectAndSceneRecognition;
 import im.zhaojun.zfile.api.baidu.image.model.api.result.JsonResult;
 import im.zhaojun.zfile.core.util.InputStreamToBase64Converter;
-import im.zhaojun.zfile.module.inode.addition_module.textClassify.model.messagequeue.send.ClassifyMessageSend;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;

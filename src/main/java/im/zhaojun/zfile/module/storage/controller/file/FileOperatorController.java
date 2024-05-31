@@ -2,11 +2,14 @@ package im.zhaojun.zfile.module.storage.controller.file;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.BooleanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import com.github.xiaoymin.knife4j.annotations.ApiSort;
 import im.zhaojun.zfile.core.constant.ZFileConstant;
 import im.zhaojun.zfile.core.util.AjaxJson;
 import im.zhaojun.zfile.core.util.StringUtils;
+import im.zhaojun.zfile.module.inode.model.entity.Inode;
+import im.zhaojun.zfile.module.inode.service.impl.InodeService;
 import im.zhaojun.zfile.module.password.model.dto.VerifyResultDTO;
 import im.zhaojun.zfile.module.password.service.PasswordConfigService;
 import im.zhaojun.zfile.module.storage.annotation.CheckPassword;
@@ -56,6 +59,8 @@ public class FileOperatorController {
 	@Resource
 	private StorageSourceService storageSourceService;
 
+	@Resource
+	private InodeService inodeService;
 	@ApiOperationSupport(order = 1)
 	@ApiOperation(value = "创建文件夹")
 	@PostMapping("/mkdir")
@@ -143,11 +148,20 @@ public class FileOperatorController {
 			passwordFieldExpression = "[0].password")
 	public AjaxJson<?> rename(@Valid @RequestBody RenameFileRequest renameFileRequest) {
 		AbstractBaseFileService<?> fileService = storageSourceContext.getByStorageKey(renameFileRequest.getStorageKey());
-		boolean flag = fileService.renameFile(renameFileRequest.getPath(), renameFileRequest.getName(), renameFileRequest.getNewName());
-		if (flag) {
+		//如果为链接节点，直接重命名索引文件名即可
+		Long inodeIdByPath = inodeService.findInodeIdByPath(renameFileRequest.getPath() + ZFileConstant.PATH_SEPARATOR + renameFileRequest.getName(), fileService.getStorageId());
+		Inode byId = inodeService.findById(inodeIdByPath);
+		if(ObjectUtil.isNull(byId.getLinkHisId())){
+			boolean flag = fileService.renameFile(renameFileRequest.getPath(), renameFileRequest.getName(), renameFileRequest.getNewName());
+			if (flag) {
+				return AjaxJson.getSuccess("重命名成功");
+			} else {
+				return AjaxJson.getError("重命名失败");
+			}
+		}else{
+			byId.setName(renameFileRequest.getNewName());
+			inodeService.update(byId);
 			return AjaxJson.getSuccess("重命名成功");
-		} else {
-			return AjaxJson.getError("重命名失败");
 		}
 	}
 

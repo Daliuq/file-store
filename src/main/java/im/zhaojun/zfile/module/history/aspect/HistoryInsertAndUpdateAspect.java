@@ -112,7 +112,7 @@ public class HistoryInsertAndUpdateAspect {
         FileHistory fileHistory =new FileHistory();
 
         fileHistory.setInodeId(inodeId);
-        fileHistory.setBakeUpTime(new Date());
+        fileHistory.setBakeUpTime(now);
         fileHistory.setBakeUpStorageId(historyService.getStorageId());
         fileHistory.setName(name);
         fileHistory.setSize(size);
