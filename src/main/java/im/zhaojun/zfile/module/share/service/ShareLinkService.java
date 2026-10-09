@@ -68,4 +68,8 @@ public class ShareLinkService {
         shareLinkMapper.delete(shareLinkQueryWrapperQueryWrapper);
         shareMapper.delete(shareQueryWrapper);
     }
+
+    public List<ShareLink> selectAll() {
+        return shareLinkMapper.selectList(null);
+    }
 }

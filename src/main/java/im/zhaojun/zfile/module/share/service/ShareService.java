@@ -95,4 +95,8 @@ public class ShareService {
     public void deleteById(Long id) {
         shareMapper.deleteById(id);
     }
+
+    public List<Share> getShares() {
+        return shareMapper.selectList(null);
+    }
 }

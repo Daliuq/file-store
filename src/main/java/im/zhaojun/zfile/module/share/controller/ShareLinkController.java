@@ -99,4 +99,24 @@ public class ShareLinkController {
         shareLinkService.deleteLink(publicKey);
         return AjaxJson.getSuccessData(true);
     }
+    @ApiOperationSupport(order = 1, ignoreParameters = {"zfile-token"})
+    @ApiOperation(value = "搜索分享信息")
+    @PostMapping("/admin/select")
+    public AjaxJson<List<ShareLinkItemResult>> AdminSelectShareLink(){
+        List<ShareLink> shareLinks = shareLinkService.selectAll();
+        List<ShareLinkItemResult> shareLinkItemResults=new ArrayList<>();
+        for (ShareLink shareLink:shareLinks){
+            Inode byId = inodeService.findById(shareLink.getInodeId());
+                ShareLinkItemResult shareLinkItemResult = new ShareLinkItemResult();
+                shareLinkItemResult.setPathAndName(
+                        inodeService.findInodePathAndNameById(shareLink.getInodeId()));
+                shareLinkItemResult.setCreateTime(shareLink.getCreateTime());
+                shareLinkItemResult.setExpireTime(shareLink.getExpireTime());
+                shareLinkItemResult.setPrivateKey(shareLink.getSharePrivateKey());
+                shareLinkItemResult.setPublicKey(shareLink.getSharePublicKey());
+                shareLinkItemResults.add(shareLinkItemResult);
+        }
+        return AjaxJson.getSuccessData(shareLinkItemResults);
+
+    }
 }

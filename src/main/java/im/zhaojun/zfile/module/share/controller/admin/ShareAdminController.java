@@ -61,4 +61,22 @@ public class ShareAdminController {
         shareService.deleteById(shareDeleteRequest.getId());
         return AjaxJson.getSuccessData(true);
     }
+
+    @ApiOperationSupport(order = 1, ignoreParameters = {"zfile-token"})
+    @ApiOperation(value = "添加分享")
+    @PostMapping("/admin/select")
+    public AjaxJson<List<ShareItemResult>> adminSelectShare(){
+        List<Share> shares = shareService.getShares();
+        List<ShareItemResult> shareItemResults=new ArrayList<>();
+        for (Share share:shares){
+            ShareItemResult shareItemResult = new ShareItemResult();
+            shareItemResult.setId(share.getId().toString());
+            shareItemResult.setPathAndName(inodeService.findInodePathAndNameById(share.getInodeId()));
+            shareItemResult.setReceiveTime(share.getReceiveTime());
+            shareItemResult.setReceiveUserName(userService.getUserById(share.getRecipientUserId()));
+            shareItemResult.setShareLinkId(share.getShareLinkId().toString());
+            shareItemResults.add(shareItemResult);
+        }
+        return AjaxJson.getSuccessData(shareItemResults);
+    }
 }
